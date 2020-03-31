@@ -191,8 +191,16 @@ class test extends TestCase
         $end_time = '';   //timestamp 结束时间
         $min_speed = '';  //int       最低速度
         $helper = new Helper();
+
+        //拼接请求参数
+        $http_query = [
+            'plateNo' => $plate_no,
+            'startTime' => $start_time,
+            'endTime' => $end_time,
+            'minSpeed' => $min_speed,
+        ];
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/vehicles/:id/track?&plateNo=' . $plate_no . '&startTime=' . $start_time . '&endTime=' . $end_time .'&minSpeed=' . $min_speed,
+            self::Ip . 'zeus/api/v1/vehicles/:id/track?' . http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -256,10 +264,14 @@ class test extends TestCase
         $start_time = '';
         $end_time = '';
         $helper = new Helper();
+
+        //拼接请求参数
+        $http_query = [
+            'startTime' => $start_time,
+            'endTime' => $end_time,
+        ];
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/vehicles/:id/fuel-control-log?
-            &startTime=' . $start_time .
-            '&endTime=' . $end_time,
+            self::Ip . 'zeus/api/v1/vehicles/:id/fuel-control-log?' . http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -276,12 +288,16 @@ class test extends TestCase
         $url = self::Ip . 'zeus/api/v1/alert-types';
         $type = '';
         $level = '';
-        if (!empty($type) || !empty($level)){
-            $url = $url .'?&type=' .$type .'&level=' . $level;
+        $http_query = [];
+        if (!empty($type)){
+            $http_query['type'] = $type;
+        }
+        if (!empty($level)) {
+            $http_query['level'] = $level;
         }
         $helper = new Helper();
         $res = $helper->getUrl(
-            $url,
+            $url.'?'.http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -351,8 +367,16 @@ class test extends TestCase
         $district = '';
         $area_code = '';
         $helper = new Helper();
+
+        //组装请求参数
+        $http_query = [
+            'depIds' => $dep_ids,
+            'typeId' => $type_id,
+            'district' => $district,
+            'areaCode' => $area_code,
+        ];
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/alerts/trend?&depIds='.$dep_ids.'&typeId='.$type_id.'&district='.$district.'&areaCode'.$area_code,
+            self::Ip . 'zeus/api/v1/alerts/trend?' . http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -371,8 +395,16 @@ class test extends TestCase
         $top = '';
         $area_code = '';
         $helper = new Helper();
+
+        //组装请求参数
+        $http_query = [
+            'startTime' => $start_time,
+            'endTime' => $end_time,
+            'top' => $top,
+            'areaCode' => $area_code,
+        ];
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/alerts-rank?&startTime='.$start_time.'&endTime='.$end_time.'&top='.$top.'&areaCode'.$area_code,
+            self::Ip . 'zeus/api/v1/alerts-rank?' . http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -391,10 +423,19 @@ class test extends TestCase
         $alert_typeid = '';
         $start_time = '';
         $end_time = '';
+
+        //组装请求参数
+        $http_query = [
+            'alertTypeId' => $alert_typeid,
+            'startTime' => $start_time,
+            'endTime' => $end_time,
+        ];
         if (!empty($vid)){
-            $url = self::Ip . 'zeus/api/v1/alerts?&vId='.$vid.'&alertTypeId='.$alert_typeid.'&startTime='.$start_time.'&endTime'.$end_time;
+            $http_query['vId'] = $vid;
+            $url = self::Ip . 'zeus/api/v1/alerts?' . http_build_query($http_query);
         }else{
-            $url = self::Ip . 'zeus/api/v1/alerts?&depId='.$depid.'&alertTypeId='.$alert_typeid.'&startTime='.$start_time.'&endTime'.$end_time;
+            $http_query['depId'] = $depid;
+            $url = self::Ip . 'zeus/api/v1/alerts?' . http_build_query($http_query);
         }
         $helper = new Helper();
         $res = $helper->getUrl(
@@ -416,8 +457,15 @@ class test extends TestCase
         $end_time = '';
         $vid = '';
         $helper = new Helper();
+
+        //组装请求参数
+        $http_query = [
+            'vId' => $vid,
+            'startTime' => $start_time,
+            'endTime' => $end_time,
+        ];
         $res = $helper->getUrl(
-            $url = self::Ip . 'zeus/api/v1/alerts?&vId='.$vid.'&startTime='.$start_time.'&endTime='.$end_time,
+            $url = self::Ip . 'zeus/api/v1/alerts?' . http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -455,8 +503,14 @@ class test extends TestCase
         $start_time = '';
         $end_time = '';
         $helper = new Helper();
+
+        //组装请求参数
+        $http_query = [
+            'startTime' => $start_time,
+            'endTime' => $end_time,
+        ];
         $res = $helper->getUrl(
-            $url = self::Ip . 'zeus/api/v1/vehicles/:id/trips?&startTime='.$start_time.'&endTime='.$end_time,
+            $url = self::Ip . 'zeus/api/v1/vehicles/:id/trips?' . http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -511,7 +565,14 @@ class test extends TestCase
         $end_time = '';
         $channel = '';
         $storage_type = '';
-        $url = self::Ip . 'zeus/api/v1/vehicles/:id/videos?&type='.$type.'&startTime='.$start_time.'&endTime='.$end_time;
+
+        //组装请求参数
+        $http_query = [
+            'type' => $type,
+            'startTime' => $start_time,
+            'endTime' => $end_time,
+        ];
+        $url = self::Ip . 'zeus/api/v1/vehicles/:id/videos?' . http_build_query($http_query);
         if (!empty($channel)){
             $url .= '&channel='.$channel;
         }
@@ -572,8 +633,15 @@ class test extends TestCase
         $start_time = '';
         $type = '';
         $helper = new Helper();
+
+        //组装请求参数
+        $http_query = [
+            'fileId' => $file_id,
+            'startTime' => $start_time,
+            'type' => $type,
+        ];
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/vehicles/:id/play-video?&fileId='.$file_id.'&startTime='.$start_time.'&type='.$type,
+            self::Ip . 'zeus/api/v1/vehicles/:id/play-video?' . http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -675,8 +743,14 @@ class test extends TestCase
         $depid = '';
         $area_code = '';
         $helper = new Helper();
+
+        //组装请求参数
+        $http_query = [
+            'depId' => $depid,
+            'areaCode' => $area_code,
+        ];
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/statistics/dep-vehicles/area-rank?&depId='.$depid.'&areaCode='.$area_code,
+            self::Ip . 'zeus/api/v1/statistics/dep-vehicles/area-rank?' . http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -709,8 +783,14 @@ class test extends TestCase
         $depid = '';
         $area_code = '';
         $helper = new Helper();
+
+        //组装请求参数
+        $http_query = [
+            'depId' => $depid,
+            'areaCode' => $area_code,
+        ];
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/statistics/current-alerts?&depId='.$depid.'&areaCode='.$area_code,
+            self::Ip . 'zeus/api/v1/statistics/current-alerts?' . http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -728,8 +808,15 @@ class test extends TestCase
         $alert_type_id = '';
         $area_code = '';
         $helper = new Helper();
+
+        //组装请求参数
+        $http_query = [
+            'depId' => $depid,
+            'areaCode' => $area_code,
+            'alertTypeId' => $alert_type_id,
+        ];
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/current-alerts/detail&depId='.$depid.'&alertTypeId='.$alert_type_id.'&areaCode='.$area_code,
+            self::Ip . 'zeus/api/v1/current-alerts/detail?' . http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
