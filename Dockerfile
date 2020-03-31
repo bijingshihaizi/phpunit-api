@@ -43,7 +43,11 @@ RUN wget https://mirrors.aliyun.com/composer/composer.phar  -O composer.phar  \
 RUN pecl install redis \
     && docker-php-ext-enable redis
 
+# PDO extensionS
+RUN docker-php-ext-install pdo_mysql bcmath gd mcrypt
+
 ADD . /home/unit
 WORKDIR /home/unit
 
 RUN rm -rf composer.lock && composer install
+
