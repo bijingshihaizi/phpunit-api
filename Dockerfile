@@ -20,9 +20,20 @@ RUN apt-get update \
         curl \
         wget \
         git \
+        zip \
+        libz-dev \
+        libssl-dev \
+        libnghttp2-dev \
+        libpcre3-dev \
+        libpng-dev \
+        libjpeg-dev \
+        gawk \
+        uuid-dev \
+        libmcrypt-dev \
         vim \
         bash \
         openssl\
+        libzip-dev \
     openssh-server \
     && apt-get clean \
     && apt-get autoremove
@@ -44,10 +55,12 @@ RUN pecl install redis \
     && docker-php-ext-enable redis
 
 # PDO extensionS
-RUN docker-php-ext-install pdo_mysql bcmath gd mcrypt
+RUN docker-php-ext-install pdo_mysql bcmath gd zip
 
 ADD . /home/unit
 WORKDIR /home/unit
 
+EXPOSE 22
 RUN rm -rf composer.lock && composer install
 
+RUN echo 'alias phpunit="/home/unit/vendor/bin/phpunit"' >> ~/.bashrc
