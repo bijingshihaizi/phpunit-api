@@ -122,7 +122,7 @@ class test extends TestCase
      */
     public function testQueryVehicles($code){
         $helper = new Helper();
-        $ids = array();
+        $ids = array('275728'); //必填参数
         $res = $helper->postUrl(
             self::Ip . '/query-vehicles',
             $ids,
@@ -130,7 +130,7 @@ class test extends TestCase
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
         );
-        $subset = array('<vehicles>');   //接口文档没具体说返回值字段
+        $subset = array('id','vehicleType','plateNo','plateColor','simNo','vin','online','status','channels','position','depId','depName','driverName','updateTime','fuelStatus');
         $this->assertEquals("200", $res['status'], $res['msg']);
     }
 
@@ -139,9 +139,9 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testVeicles($code){
-        $queryString = '';
-        $areaCode = '';
-        $depId = '';
+        $queryString = '京';  //可为空
+        $areaCode = '';     //可为空
+        $depId = '';        //可为空
         $helper = new Helper();
         $url = self::Ip . '/vehicles';
         if (!empty($queryString)){
@@ -160,78 +160,34 @@ class test extends TestCase
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
         );
-        $subset = array('<vehicles>');   //接口文档没具体说返回值字段
+        $subset = array('id','vehicleType','plateNo','plateColor','simNo','vin','online','status','channels','position','depId','depName','driverName','updateTime','fuelStatus');
         $this->assertEquals("200", $res['status'], $res['msg']);
     }
 
-    /**
-     * 车辆加入监控
-     * @depends testVerifyCode
-     */
-    public function testTrace($code){
-        $helper = new Helper();
-        $ids = array();
-        $res = $helper->postUrl(
-            self::Ip . '/vehicles/trace',
-            $ids,
-            [
-                'cookie: IPCS-SESSIONID='.$code[2]
-            ]
-        );
-        $this->assertEquals("200", $res['status'], $res['msg']);
-    }
-
-    /**
-     * 车辆历史轨迹
-     * @depends testVerifyCode
-     */
-    public function testIdTrace($code){
-        $plate_no = '';   //string 车牌号
-        $start_time = ''; //timestamp 开始时间
-        $end_time = '';   //timestamp 结束时间
-        $min_speed = '';  //int       最低速度
-        $helper = new Helper();
-
-        //拼接请求参数
-        $http_query = [
-            'plateNo' => $plate_no,
-            'startTime' => $start_time,
-            'endTime' => $end_time,
-            'minSpeed' => $min_speed,
-        ];
-        $res = $helper->getUrl(
-            self::Ip . '/vehicles/:id/track?' . http_build_query($http_query),
-            [
-                'cookie: IPCS-SESSIONID='.$code[2]
-            ]
-        );
-        $this->assertEquals("200", $res['status'], $res['msg']);
-    }
-
-    /**
-     * 实时视频  查询车辆实时视频参数
-     * @depends testVerifyCode
-     */
-    public function testRealTime($code){
-        $helper = new Helper();
-        $res = $helper->getUrl(
-            self::Ip . '/vehicles/:id/real-time',
-            [
-                'cookie: IPCS-SESSIONID='.$code[2]
-            ]
-        );
-        $this->assertEquals("200", $res['status'], $res['msg']);
-    }
+//    /**
+//     * 实时视频  查询车辆实时视频参数
+//     * @depends testVerifyCode
+//     */
+//    public function testRealTime($code){
+//        $helper = new Helper();
+//        $res = $helper->getUrl(
+//            self::Ip . '/vehicles/:id/real-time',
+//            [
+//                'cookie: IPCS-SESSIONID='.$code[2]
+//            ]
+//        );
+//        $this->assertEquals("200", $res['status'], $res['msg']);
+//    }
 
     /**
      * 车辆控制  油电控制
      * @depends testVerifyCode
      */
     public function testFuelControl($code){
-        $fuel_status = array();
+        $fuel_status = 1;
         $helper = new Helper();
         $res = $helper->putUrl(
-            self::Ip . '/vehicles/:id/fuel-control',
+            self::Ip . '/vehicles/275728/fuel-control',
             $fuel_status,
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
@@ -247,7 +203,7 @@ class test extends TestCase
     public function testFuelStatsu($code){
         $helper = new Helper();
         $res = $helper->getUrl(
-            self::Ip . '/vehicles/:id/fuel-status',
+            self::Ip . '/vehicles/275728/fuel-status',
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -261,8 +217,8 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testFuelControlLog($code){
-        $start_time = '';
-        $end_time = '';
+        $start_time = '0';
+        $end_time = '1585725963776';
         $helper = new Helper();
 
         //拼接请求参数
@@ -271,7 +227,7 @@ class test extends TestCase
             'endTime' => $end_time,
         ];
         $res = $helper->getUrl(
-            self::Ip . '/vehicles/:id/fuel-control-log?' . http_build_query($http_query),
+            self::Ip . '/vehicles/275728/fuel-control-log?' . http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -286,8 +242,8 @@ class test extends TestCase
      */
     public function testGAlertTypes($code){
         $url = self::Ip . '/alert-types';
-        $type = '';
-        $level = '';
+        $type = '';     //可为空
+        $level = '';    //可为空
         $http_query = [];
         if (!empty($type)){
             $http_query['type'] = $type;
@@ -303,6 +259,7 @@ class test extends TestCase
             ]
         );
         $subset = array('id','name','level','type','rule','createTime','expire_time');
+        $data = $res['data'][0];
         $this->assertEquals("200", $res['status'], $res['msg']);
     }
 
@@ -311,7 +268,7 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testPAlertTypes($code){
-        $arr = array('name'=>'','type'=>'','rule'=>'');
+        $arr = array('name'=>'unit测试','type'=>'fence','rule'=>['type'=>1,'circle'=>['radius'=>'430','lat'=>'39','lng'=>'116']]);
         $helper = new Helper();
         $res = $helper->postUrl(
             self::Ip . '/alert-types',
@@ -320,18 +277,22 @@ class test extends TestCase
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
         );
-        $subset = array('id','name','level','type','rule','createTime','expire_time');
+        $subset = array('id','name','rule','createTime');
         $this->assertEquals("200", $res['status'], $res['msg']);
+        return $res['data']['id'];
     }
 
     /**
      * 报警报表  删除区域报警
      * @depends testVerifyCode
+     * @param $code
+     * @depends testPAlertTypes
+     * @param $id
      */
-    public function testDAlertTypes($code){
+    public function testDAlertTypes($code,$id){
         $helper = new Helper();
         $res = $helper->delUrl(
-            self::Ip . '/alert-types/:id',
+            self::Ip . '/alert-types/'.$id,
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -344,16 +305,37 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testCurrentAlerts($code){
-        $depld = '';
-        $alert_type_id = '';
-        $area_code = '';
+        $depld = '-1';
+        $alert_type_id = '-1';
+        $area_code = '110000';
         $helper = new Helper();
         $res = $helper->getUrl(
-            self::Ip . '/vehicles/:id/current-alerts',
+            self::Ip . '/current-alerts',
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
         );
+        $subset = array('vId','depId','vehicleType','driverName','lng','lat');
+        $data = $res['data'][0];
+        $this->assertEquals("200", $res['status'], $res['msg']);
+    }
+
+    /**
+     * 报警报表  获取指定车辆当前的告警信息
+     * @depends testVerifyCode
+     */
+    public function testIdCurrentAlerts($code){
+        $depld = '-1';
+        $alert_type_id = '-1';
+        $area_code = '110000';
+        $helper = new Helper();
+        $res = $helper->getUrl(
+            self::Ip . ' vehicles/275728/current-alerts',
+            [
+                'cookie: IPCS-SESSIONID='.$code[2]
+            ]
+        );
+        $subset = array('vId','alerts','plateNo','driverName','depId','alertTime','depName','vehicleType','plateColor');
         $this->assertEquals("200", $res['status'], $res['msg']);
     }
 
@@ -362,10 +344,10 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testAlertTrend($code){
-        $dep_ids = '';
-        $type_id = '';
-        $district = '';
-        $area_code = '';
+        $dep_ids = '6,4,7,5';
+        $type_id = '1';
+        $district = '30';
+        $area_code = '110000';
         $helper = new Helper();
 
         //组装请求参数
@@ -381,7 +363,7 @@ class test extends TestCase
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
         );
-        $subset = array('time','count','DepTrend'=>['depId','depName','ratio','trends']);
+        $subset = array('depId','depName','ratio','trends');
         $this->assertEquals("200", $res['status'], $res['msg']);
     }
 
@@ -390,10 +372,10 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testAlertRank($code){
-        $start_time = '';
-        $end_time = '';
-        $top = '';
-        $area_code = '';
+        $start_time = '1582992000000';
+        $end_time = '1585670399999';
+        $top = '4';
+        $area_code = '110000';
         $helper = new Helper();
 
         //组装请求参数
@@ -409,7 +391,7 @@ class test extends TestCase
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
         );
-        $subset = array('DepAlertRatio'=>['depId','depName','ratio']);
+        $subset = array('depId','depName','ratio');
         $this->assertEquals("200", $res['status'], $res['msg']);
     }
 
@@ -418,11 +400,11 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testAlerts($code){
-        $vid = '';
+        $vid = '275728';
         $depid = '';
-        $alert_typeid = '';
-        $start_time = '';
-        $end_time = '';
+        $alert_typeid = '-1';
+        $start_time = '1585670400000';
+        $end_time = '1585756799999';
 
         //组装请求参数
         $http_query = [
@@ -444,7 +426,10 @@ class test extends TestCase
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
         );
-        $subset = array('id','vId','plateNo','depId','depName','alertType','alertPosition','endPosition','alertValue','alertUnit','gps');
+        //无报警情况$res['data'] == null
+        if ($res['data'] !== ''){
+            $subset = array('id','vId','plateNo','depId','depName','alertType','alertPosition','endPosition','alertValue','alertUnit','gps');
+        }
         $this->assertEquals("200", $res['status'], $res['msg']);
     }
 
@@ -453,9 +438,9 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testTrips($code){
-        $start_time = '';
-        $end_time = '';
-        $vid = '';
+        $start_time = '1585670400000';
+        $end_time = '1585756799999';
+        $vid = '275728';
         $helper = new Helper();
 
         //组装请求参数
@@ -479,10 +464,10 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testSearchVehicles($code){
-        $start_time = '';
-        $end_time = '';
-        $shapes = [];
-        $depid = '';
+        $start_time = '1585670400000';
+        $end_time = '1585756799999';
+        $shapes = ['type'=>1,'circle'=>['radius'=>'900','lat'=>'39','lng'=>'116']];
+        $depid = '-1';
         $helper = new Helper();
         $res = $helper->postUrl(
             $url = self::Ip . '/search-vehicles',
@@ -491,7 +476,9 @@ class test extends TestCase
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
         );
-        $subset = array('depId','depName','counts');
+        //有可能有0下标 $subset_data
+        $subset_data = array('id','vehicleType','plateNo','plateColor','simNo','vin','online','status','videoChannelNum','videoChannelName','depId','depName','driverName','updateTime','fuelStatus');
+        $subset_mate = array('depId','depName','counts');
         $this->assertEquals("200", $res['status'], $res['msg']);
     }
 
@@ -500,8 +487,8 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testVehiclesTrips($code){
-        $start_time = '';
-        $end_time = '';
+        $start_time = '1585670400000';
+        $end_time = '1585756799999';
         $helper = new Helper();
 
         //组装请求参数
@@ -510,7 +497,7 @@ class test extends TestCase
             'endTime' => $end_time,
         ];
         $res = $helper->getUrl(
-            $url = self::Ip . '/vehicles/:id/trips?' . http_build_query($http_query),
+            $url = self::Ip . '/vehicles/275728/trips?' . http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -524,11 +511,11 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testLive($code){
-        $index = '';
-        $type = '';
+        $index = '2';
+        $type = 'hls';
         $helper = new Helper();
         $res = $helper->postUrl(
-            $url = self::Ip . '/vehicles/:id/live',
+            $url = self::Ip . '/vehicles/275728/live',
             ['index'=>$index,'type'=>$type],
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
@@ -543,10 +530,10 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testStopLive($code){
-        $channel = '';
+        $channel = 0;
         $helper = new Helper();
         $res = $helper->postUrl(
-            $url = self::Ip . '/vehicles/:id/stop-live',
+            $url = self::Ip . '/vehicles/275728/stop-live',
             ['channel'=>$channel],
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
@@ -560,10 +547,10 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testVideos($code){
-        $type = '';
-        $start_time = '';
-        $end_time = '';
-        $channel = '';
+        $type = '1';
+        $start_time = '1585670400000';
+        $end_time = '1585756799999';
+        $channel = '1';
         $storage_type = '';
 
         //组装请求参数
@@ -572,7 +559,7 @@ class test extends TestCase
             'startTime' => $start_time,
             'endTime' => $end_time,
         ];
-        $url = self::Ip . '/vehicles/:id/videos?' . http_build_query($http_query);
+        $url = self::Ip . '/vehicles/275728/videos?' . http_build_query($http_query);
         if (!empty($channel)){
             $url .= '&channel='.$channel;
         }
@@ -586,52 +573,81 @@ class test extends TestCase
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
         );
-        $subset = array('id','startTime','endTime','uploadTime','fileType','channel','size','storageType','path','downloadUrl','uploadType');
+        //$res['data'][0] data下有可能为空 表示无视频
+        $subset = array('id','startTime','endTime','uploadTime','fileType','channel','size','path','downloadUrl','uploadType');
         $this->assertEquals("200", $res['status'], $res['msg']);
+    }
+
+    /**
+     * 视频回放  获取服务器上存储的视频文件
+     * @depends testVerifyCode
+     */
+    public function testUploadVideo($code){
+        $file_id = '65345';
+        $helper = new Helper();
+        $res = $helper->postUrl(
+            self::Ip . 'vehicles/275728/upload-video',
+            ['fileId'=>$file_id],
+            [
+                'cookie: IPCS-SESSIONID='.$code[2]
+            ]
+        );
+        $subset = array('taskId','status');
+        $this->assertEquals("200", $res['status'], $res['msg']);
+        return $file_id;
     }
 
     /**
      * 视频回放  获取文件上传状态
      * @depends testVerifyCode
+     * @param $code
+     * @depends testUploadVideo
+     * @param $id
      */
-    public function testFileTaskId($code){
+    public function testFileTaskId($code,$id){
         $helper = new Helper();
         $res = $helper->getUrl(
-            self::Ip . '/file-tasks/:id',
+            self::Ip . '/file-tasks/'.$id,
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
         );
-        $subset = array('status','errorMessage');   // errorMessage 可选参数
+        $subset = array('status');   // errorMessage 可选参数
         $this->assertEquals("200", $res['status'], $res['msg']);
     }
 
     /**
      * 视频回放  （暂停/继续/取消）文件上传
      * @depends testVerifyCode
+     * @param $code
+     * @depends testUploadVideo
+     * @param $id
      */
-    public function testFileTasksStatus($code){
-        $action = '';
+    public function testFileTasksStatus($code,$id){
+        $action = 'cancel';
         $helper = new Helper();
         $res = $helper->putUrl(
-            self::Ip . '/file-tasks/:id/status',
+            self::Ip . '/file-tasks/'.$id.'/status',
             ['action'=>$action],
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
         );
-        $subset = array('status','errorMessage','path','downloadUrl');   // status 可选参数
+        $subset = array('status');
         $this->assertEquals("200", $res['status'], $res['msg']);
     }
 
     /**
      * 视频回放  通知终端回放视频
      * @depends testVerifyCode
+     * @param $code
+     * @depends testUploadVideo
+     * @param $id
      */
-    public function testPlayVideo($code){
-        $file_id = ''; //id
-        $start_time = '';
-        $type = '';
+    public function testPlayVideo($code,$id){
+        $file_id = $id;
+        $start_time = '0';      //参数不准确
+        $type = 'hls';
         $helper = new Helper();
 
         //组装请求参数
@@ -641,7 +657,7 @@ class test extends TestCase
             'type' => $type,
         ];
         $res = $helper->getUrl(
-            self::Ip . '/vehicles/:id/play-video?' . http_build_query($http_query),
+            self::Ip . '/vehicles/'.$file_id.'/play-video?' . http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -650,42 +666,42 @@ class test extends TestCase
         $this->assertEquals("200", $res['status'], $res['msg']);
     }
 
-    /**
-     * 视频回放  终端视频回放控制
-     * @depends testVerifyCode
-     */
-    public function testPlayStatus($code){
-        $file_id = '';
-        $action = '';
-        $helper = new Helper();
-        $res = $helper->putUrl(
-            self::Ip . '/vehicles/:id/play-status`',
-            ['fileId'=>$file_id,'action'=>$action],
-            [
-                'cookie: IPCS-SESSIONID='.$code[2]
-            ]
-        );
-        // {
-        //     message: "视频暂停成功"
-        //  }
-        $this->assertEquals("200", "200", $res['msg']);
-    }
-
-    /**
-     * 视频回放  获取全部车辆位置信息
-     * @depends testVerifyCode
-     */
-    public function testAllVehicle($code){
-        $helper = new Helper();
-        $res = $helper->getUrl(
-            self::Ip . '/locations/all-vehicle',
-            [
-                'cookie: IPCS-SESSIONID='.$code[2]
-            ]
-        );
-        $subset = array('vId','plateNo','depId','lat','lng','isMove','isAlert','areaCode');
-        $this->assertEquals("200", $res['status'], $res['msg']);
-    }
+//    /**
+//     * 视频回放  终端视频回放控制
+//     * @depends testVerifyCode
+//     */
+//    public function testPlayStatus($code){
+//        $file_id = '';
+//        $action = '';
+//        $helper = new Helper();
+//        $res = $helper->putUrl(
+//            self::Ip . '/vehicles/:id/play-status`',
+//            ['fileId'=>$file_id,'action'=>$action],
+//            [
+//                'cookie: IPCS-SESSIONID='.$code[2]
+//            ]
+//        );
+//        // {
+//        //     message: "视频暂停成功"
+//        //  }
+//        $this->assertEquals("200", "200", $res['msg']);
+//    }
+//
+//    /**
+//     * 视频回放  获取全部车辆位置信息
+//     * @depends testVerifyCode
+//     */
+//    public function testAllVehicle($code){
+//        $helper = new Helper();
+//        $res = $helper->getUrl(
+//            self::Ip . '/locations/all-vehicle',
+//            [
+//                'cookie: IPCS-SESSIONID='.$code[2]
+//            ]
+//        );
+//        $subset = array('vId','plateNo','depId','lat','lng','isMove','isAlert','areaCode');
+//        $this->assertEquals("200", $res['status'], $res['msg']);
+//    }
 
     /**
      * 视频回放  获取车辆位置信息缓存文件
@@ -715,98 +731,99 @@ class test extends TestCase
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
         );
+        //$res['data'][0]
         $subset = array('areaCode','name');
         $this->assertEquals("200", $res['status'], $res['msg']);
     }
-
-    /**
-     * 视频回放  获取行政区域
-     * @depends testVerifyCode
-     */
-    public function testStatistics($code){
-        $helper = new Helper();
-        $res = $helper->getUrl(
-            self::Ip . '/statistics/dep-vehicles',
-            [
-                'cookie: IPCS-SESSIONID='.$code[2]
-            ]
-        );
-        $subset = array('depId','depName','count','ratio');
-        $this->assertEquals("200", $res['status'], $res['msg']);
-    }
-
-    /**
-     * 入网车辆排行——按区域统计
-     * @depends testVerifyCode
-     */
-    public function testAreaRank($code){
-        $depid = '';
-        $area_code = '';
-        $helper = new Helper();
-
-        //组装请求参数
-        $http_query = [
-            'depId' => $depid,
-            'areaCode' => $area_code,
-        ];
-        $res = $helper->getUrl(
-            self::Ip . '/statistics/dep-vehicles/area-rank?' . http_build_query($http_query),
-            [
-                'cookie: IPCS-SESSIONID='.$code[2]
-            ]
-        );
-        $subset = array('areaCode','areaName','count','ratio');
-        $this->assertEquals("200", $res['status'], $res['msg']);
-    }
-
-    /**
-     * 入网车辆排行——当日报警排行榜
-     * @depends testVerifyCode
-     */
-    public function testStatisticsCurrentAlerts($code){
-        $helper = new Helper();
-        $res = $helper->getUrl(
-            self::Ip . '/statistics/current-alerts',
-            [
-                'cookie: IPCS-SESSIONID='.$code[2]
-            ]
-        );
-        $subset = array('areaCode','areaName','count','ratio');
-        $this->assertEquals("200", $res['status'], $res['msg']);
-    }
-
-    /**
-     * 单个组织当日报警排行——按区域
-     * @depends testVerifyCode
-     */
-    public function testStatisticsAreaRank($code){
-        $depid = '';
-        $area_code = '';
-        $helper = new Helper();
-
-        //组装请求参数
-        $http_query = [
-            'depId' => $depid,
-            'areaCode' => $area_code,
-        ];
-        $res = $helper->getUrl(
-            self::Ip . '/statistics/current-alerts?' . http_build_query($http_query),
-            [
-                'cookie: IPCS-SESSIONID='.$code[2]
-            ]
-        );
-        $subset = array('areaCode','areaName','vehicleCount','ratio');
-        $this->assertEquals("200", $res['status'], $res['msg']);
-    }
+//
+//    /**
+//     * 视频回放  获取行政区域
+//     * @depends testVerifyCode
+//     */
+//    public function testStatistics($code){
+//        $helper = new Helper();
+//        $res = $helper->getUrl(
+//            self::Ip . '/statistics/dep-vehicles',
+//            [
+//                'cookie: IPCS-SESSIONID='.$code[2]
+//            ]
+//        );
+//        $subset = array('depId','depName','count','ratio');
+//        $this->assertEquals("200", $res['status'], $res['msg']);
+//    }
+//
+//    /**
+//     * 入网车辆排行——按区域统计
+//     * @depends testVerifyCode
+//     */
+//    public function testAreaRank($code){
+//        $depid = '';
+//        $area_code = '';
+//        $helper = new Helper();
+//
+//        //组装请求参数
+//        $http_query = [
+//            'depId' => $depid,
+//            'areaCode' => $area_code,
+//        ];
+//        $res = $helper->getUrl(
+//            self::Ip . '/statistics/dep-vehicles/area-rank?' . http_build_query($http_query),
+//            [
+//                'cookie: IPCS-SESSIONID='.$code[2]
+//            ]
+//        );
+//        $subset = array('areaCode','areaName','count','ratio');
+//        $this->assertEquals("200", $res['status'], $res['msg']);
+//    }
+//
+//    /**
+//     * 入网车辆排行——当日报警排行榜
+//     * @depends testVerifyCode
+//     */
+//    public function testStatisticsCurrentAlerts($code){
+//        $helper = new Helper();
+//        $res = $helper->getUrl(
+//            self::Ip . '/statistics/current-alerts',
+//            [
+//                'cookie: IPCS-SESSIONID='.$code[2]
+//            ]
+//        );
+//        $subset = array('areaCode','areaName','count','ratio');
+//        $this->assertEquals("200", $res['status'], $res['msg']);
+//    }
+//
+//    /**
+//     * 单个组织当日报警排行——按区域
+//     * @depends testVerifyCode
+//     */
+//    public function testStatisticsAreaRank($code){
+//        $depid = '';
+//        $area_code = '';
+//        $helper = new Helper();
+//
+//        //组装请求参数
+//        $http_query = [
+//            'depId' => $depid,
+//            'areaCode' => $area_code,
+//        ];
+//        $res = $helper->getUrl(
+//            self::Ip . '/statistics/current-alerts?' . http_build_query($http_query),
+//            [
+//                'cookie: IPCS-SESSIONID='.$code[2]
+//            ]
+//        );
+//        $subset = array('areaCode','areaName','vehicleCount','ratio');
+//        $this->assertEquals("200", $res['status'], $res['msg']);
+//    }
 
     /**
      * 单个组织当日报警排行——获取报警详情
      * @depends testVerifyCode
      */
     public function testCurrentAlertsDetail($code){
-        $depid = '';
-        $alert_type_id = '';
-        $area_code = '';
+        $depid = '-1';
+        $alert_type_id = '-1';
+        $area_code = '110000';
         $helper = new Helper();
 
         //组装请求参数
@@ -825,20 +842,20 @@ class test extends TestCase
         $this->assertEquals("200", $res['status'], $res['msg']);
     }
 
-    /**
-     * 单个组织当日报警排行——获取单个报警详情
-     * @depends testVerifyCode
-     */
-    public function testAlertId($code){
-        $helper = new Helper();
-        $res = $helper->getUrl(
-            self::Ip . '/alerts/:id',
-            [
-                'cookie: IPCS-SESSIONID='.$code[2]
-            ]
-        );
-        $this->assertEquals("200", $res['status'], $res['msg']);
-    }
+//    /**
+//     * 单个组织当日报警排行——获取单个报警详情
+//     * @depends testVerifyCode
+//     */
+//    public function testAlertId($code){
+//        $helper = new Helper();
+//        $res = $helper->getUrl(
+//            self::Ip . '/alerts/:id',
+//            [
+//                'cookie: IPCS-SESSIONID='.$code[2]
+//            ]
+//        );
+//        $this->assertEquals("200", $res['status'], $res['msg']);
+//    }
 
 }
 
