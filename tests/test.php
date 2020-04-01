@@ -6,13 +6,13 @@ use Common\helper;
 class test extends TestCase
 {
 
-    const Ip = "https://ipcs.iov-smart.net/";
+    const Ip = "https://ipcs.iov-smart.net/zeus/api/v1";
 
     public function testVerifyCode()
     {
         $helper = new Helper();
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/verify-code'
+            self::Ip . '/verify-code'
         );
         preg_match('/IPCS-SESSIONID=(.*?);/',$res,$m);
         $sessionId = $m[1];
@@ -35,7 +35,7 @@ class test extends TestCase
     {
         $helper = new Helper();
         $res = $helper->postUrl(
-            self::Ip . 'zeus/api/v1/login',
+            self::Ip . '/login',
             [
                 'username' => 'admin',
                 'password' => '123321',
@@ -59,7 +59,7 @@ class test extends TestCase
     public function testProfile($code){
         $helper = new Helper();
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/profile',
+            self::Ip . '/profile',
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -75,7 +75,7 @@ class test extends TestCase
     public function testLogout($code){
         $helper = new Helper();
         $res = $helper->delUrl(
-            self::Ip . 'zeus/api/v1/logout',
+            self::Ip . '/logout',
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -91,7 +91,7 @@ class test extends TestCase
         $helper = new Helper();
         $oldPsd = '123321';
         $res = $helper->putUrl(
-            self::Ip . 'zeus/api/v1/password', //url
+            self::Ip . '/password', //url
             ['oldPsd' => $oldPsd, 'newPsd' => '123321'], //params
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
@@ -107,7 +107,7 @@ class test extends TestCase
     public function testDepartments($code){
         $helper = new Helper();
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/departments',
+            self::Ip . '/departments',
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -124,7 +124,7 @@ class test extends TestCase
         $helper = new Helper();
         $ids = array();
         $res = $helper->postUrl(
-            self::Ip . 'zeus/api/v1/query-vehicles',
+            self::Ip . '/query-vehicles',
             $ids,
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
@@ -143,7 +143,7 @@ class test extends TestCase
         $areaCode = '';
         $depId = '';
         $helper = new Helper();
-        $url = self::Ip . 'zeus/api/v1/vehicles';
+        $url = self::Ip . '/vehicles';
         if (!empty($queryString)){
             $queryStrings = '&queryString='.$queryString ?? '';
         }elseif (!empty($areaCode)){
@@ -172,7 +172,7 @@ class test extends TestCase
         $helper = new Helper();
         $ids = array();
         $res = $helper->postUrl(
-            self::Ip . 'zeus/api/v1/vehicles/trace',
+            self::Ip . '/vehicles/trace',
             $ids,
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
@@ -200,7 +200,7 @@ class test extends TestCase
             'minSpeed' => $min_speed,
         ];
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/vehicles/:id/track?' . http_build_query($http_query),
+            self::Ip . '/vehicles/:id/track?' . http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -215,7 +215,7 @@ class test extends TestCase
     public function testRealTime($code){
         $helper = new Helper();
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/vehicles/:id/real-time',
+            self::Ip . '/vehicles/:id/real-time',
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -231,7 +231,7 @@ class test extends TestCase
         $fuel_status = array();
         $helper = new Helper();
         $res = $helper->putUrl(
-            self::Ip . 'zeus/api/v1/vehicles/:id/fuel-control',
+            self::Ip . '/vehicles/:id/fuel-control',
             $fuel_status,
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
@@ -247,7 +247,7 @@ class test extends TestCase
     public function testFuelStatsu($code){
         $helper = new Helper();
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/vehicles/:id/fuel-status',
+            self::Ip . '/vehicles/:id/fuel-status',
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -271,7 +271,7 @@ class test extends TestCase
             'endTime' => $end_time,
         ];
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/vehicles/:id/fuel-control-log?' . http_build_query($http_query),
+            self::Ip . '/vehicles/:id/fuel-control-log?' . http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -285,7 +285,7 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testGAlertTypes($code){
-        $url = self::Ip . 'zeus/api/v1/alert-types';
+        $url = self::Ip . '/alert-types';
         $type = '';
         $level = '';
         $http_query = [];
@@ -314,7 +314,7 @@ class test extends TestCase
         $arr = array('name'=>'','type'=>'','rule'=>'');
         $helper = new Helper();
         $res = $helper->postUrl(
-            self::Ip . 'zeus/api/v1/alert-types',
+            self::Ip . '/alert-types',
             $arr,
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
@@ -331,7 +331,7 @@ class test extends TestCase
     public function testDAlertTypes($code){
         $helper = new Helper();
         $res = $helper->delUrl(
-            self::Ip . 'zeus/api/v1/alert-types/:id',
+            self::Ip . '/alert-types/:id',
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -349,7 +349,7 @@ class test extends TestCase
         $area_code = '';
         $helper = new Helper();
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/vehicles/:id/current-alerts',
+            self::Ip . '/vehicles/:id/current-alerts',
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -376,7 +376,7 @@ class test extends TestCase
             'areaCode' => $area_code,
         ];
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/alerts/trend?' . http_build_query($http_query),
+            self::Ip . '/alerts/trend?' . http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -404,7 +404,7 @@ class test extends TestCase
             'areaCode' => $area_code,
         ];
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/alerts-rank?' . http_build_query($http_query),
+            self::Ip . '/alerts-rank?' . http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -432,10 +432,10 @@ class test extends TestCase
         ];
         if (!empty($vid)){
             $http_query['vId'] = $vid;
-            $url = self::Ip . 'zeus/api/v1/alerts?' . http_build_query($http_query);
+            $url = self::Ip . '/alerts?' . http_build_query($http_query);
         }else{
             $http_query['depId'] = $depid;
-            $url = self::Ip . 'zeus/api/v1/alerts?' . http_build_query($http_query);
+            $url = self::Ip . '/alerts?' . http_build_query($http_query);
         }
         $helper = new Helper();
         $res = $helper->getUrl(
@@ -465,7 +465,7 @@ class test extends TestCase
             'endTime' => $end_time,
         ];
         $res = $helper->getUrl(
-            $url = self::Ip . 'zeus/api/v1/alerts?' . http_build_query($http_query),
+            $url = self::Ip . '/alerts?' . http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -485,7 +485,7 @@ class test extends TestCase
         $depid = '';
         $helper = new Helper();
         $res = $helper->postUrl(
-            $url = self::Ip . 'zeus/api/v1/search-vehicles',
+            $url = self::Ip . '/search-vehicles',
             ['startTime'=>$start_time,'endTime'=>$end_time,'shapes'=>$shapes,'depId'=>$depid],
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
@@ -510,7 +510,7 @@ class test extends TestCase
             'endTime' => $end_time,
         ];
         $res = $helper->getUrl(
-            $url = self::Ip . 'zeus/api/v1/vehicles/:id/trips?' . http_build_query($http_query),
+            $url = self::Ip . '/vehicles/:id/trips?' . http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -528,7 +528,7 @@ class test extends TestCase
         $type = '';
         $helper = new Helper();
         $res = $helper->postUrl(
-            $url = self::Ip . 'zeus/api/v1/vehicles/:id/live',
+            $url = self::Ip . '/vehicles/:id/live',
             ['index'=>$index,'type'=>$type],
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
@@ -546,7 +546,7 @@ class test extends TestCase
         $channel = '';
         $helper = new Helper();
         $res = $helper->postUrl(
-            $url = self::Ip . 'zeus/api/v1/vehicles/:id/stop-live',
+            $url = self::Ip . '/vehicles/:id/stop-live',
             ['channel'=>$channel],
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
@@ -572,7 +572,7 @@ class test extends TestCase
             'startTime' => $start_time,
             'endTime' => $end_time,
         ];
-        $url = self::Ip . 'zeus/api/v1/vehicles/:id/videos?' . http_build_query($http_query);
+        $url = self::Ip . '/vehicles/:id/videos?' . http_build_query($http_query);
         if (!empty($channel)){
             $url .= '&channel='.$channel;
         }
@@ -597,7 +597,7 @@ class test extends TestCase
     public function testFileTaskId($code){
         $helper = new Helper();
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/file-tasks/:id',
+            self::Ip . '/file-tasks/:id',
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -614,7 +614,7 @@ class test extends TestCase
         $action = '';
         $helper = new Helper();
         $res = $helper->putUrl(
-            self::Ip . 'zeus/api/v1/file-tasks/:id/status',
+            self::Ip . '/file-tasks/:id/status',
             ['action'=>$action],
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
@@ -641,7 +641,7 @@ class test extends TestCase
             'type' => $type,
         ];
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/vehicles/:id/play-video?' . http_build_query($http_query),
+            self::Ip . '/vehicles/:id/play-video?' . http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -659,7 +659,7 @@ class test extends TestCase
         $action = '';
         $helper = new Helper();
         $res = $helper->putUrl(
-            self::Ip . 'zeus/api/v1/vehicles/:id/play-status`',
+            self::Ip . '/vehicles/:id/play-status`',
             ['fileId'=>$file_id,'action'=>$action],
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
@@ -678,7 +678,7 @@ class test extends TestCase
     public function testAllVehicle($code){
         $helper = new Helper();
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/locations/all-vehicle',
+            self::Ip . '/locations/all-vehicle',
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -694,7 +694,7 @@ class test extends TestCase
     public function testCacheVehicles($code){
         $helper = new Helper();
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/caches/vehicles',
+            self::Ip . '/caches/vehicles',
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -710,7 +710,7 @@ class test extends TestCase
     public function testAreaCodes($code){
         $helper = new Helper();
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/area-codes',
+            self::Ip . '/area-codes',
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -726,7 +726,7 @@ class test extends TestCase
     public function testStatistics($code){
         $helper = new Helper();
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/statistics/dep-vehicles',
+            self::Ip . '/statistics/dep-vehicles',
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -750,7 +750,7 @@ class test extends TestCase
             'areaCode' => $area_code,
         ];
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/statistics/dep-vehicles/area-rank?' . http_build_query($http_query),
+            self::Ip . '/statistics/dep-vehicles/area-rank?' . http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -766,7 +766,7 @@ class test extends TestCase
     public function testStatisticsCurrentAlerts($code){
         $helper = new Helper();
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/statistics/current-alerts',
+            self::Ip . '/statistics/current-alerts',
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -790,7 +790,7 @@ class test extends TestCase
             'areaCode' => $area_code,
         ];
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/statistics/current-alerts?' . http_build_query($http_query),
+            self::Ip . '/statistics/current-alerts?' . http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -816,7 +816,7 @@ class test extends TestCase
             'alertTypeId' => $alert_type_id,
         ];
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/current-alerts/detail?' . http_build_query($http_query),
+            self::Ip . '/current-alerts/detail?' . http_build_query($http_query),
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
@@ -832,7 +832,7 @@ class test extends TestCase
     public function testAlertId($code){
         $helper = new Helper();
         $res = $helper->getUrl(
-            self::Ip . 'zeus/api/v1/alerts/:id',
+            self::Ip . '/alerts/:id',
             [
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
