@@ -60,7 +60,10 @@ RUN docker-php-ext-install pdo_mysql bcmath gd zip
 ADD . /home/unit
 WORKDIR /home/unit
 
-EXPOSE 22
 RUN rm -rf composer.lock && composer install
 
 RUN echo 'alias phpunit="/home/unit/vendor/bin/phpunit"' >> ~/.bashrc
+
+EXPOSE 22
+
+ENTRYPOINT sh /home/unit/startUp.sh
