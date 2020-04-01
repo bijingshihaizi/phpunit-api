@@ -80,7 +80,7 @@ class test extends TestCase
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
         );
-        $this->assertEquals("200", $res['status'], $res['message']);
+        $this->assertEquals(200, $res['status'], $res['message']);
     }
 
     /**
@@ -97,7 +97,7 @@ class test extends TestCase
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
         );
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
     /**
@@ -113,7 +113,7 @@ class test extends TestCase
             ]
         );
         $subset = array ('id','name','pid');
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
     /**
@@ -131,7 +131,7 @@ class test extends TestCase
             ]
         );
         $subset = array('id','vehicleType','plateNo','plateColor','simNo','vin','online','status','channels','position','depId','depName','driverName','updateTime','fuelStatus');
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
     /**
@@ -161,7 +161,7 @@ class test extends TestCase
             ]
         );
         $subset = array('id','vehicleType','plateNo','plateColor','simNo','vin','online','status','channels','position','depId','depName','driverName','updateTime','fuelStatus');
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
 //    /**
@@ -176,7 +176,7 @@ class test extends TestCase
 //                'cookie: IPCS-SESSIONID='.$code[2]
 //            ]
 //        );
-//        $this->assertEquals("200", $res['status'], $res['msg']);
+//        $this->assertEquals(200, $res['status'], $res['msg']);
 //    }
 
     /**
@@ -193,7 +193,7 @@ class test extends TestCase
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
         );
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
     /**
@@ -209,7 +209,7 @@ class test extends TestCase
             ]
         );
         $subset = array('fuelStatus','controlStatus');
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
     /**
@@ -233,7 +233,7 @@ class test extends TestCase
             ]
         );
         $subset = array('plateNo','controlStatus','createTime','userName');
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
     /**
@@ -260,7 +260,7 @@ class test extends TestCase
         );
         $subset = array('id','name','level','type','rule','createTime','expire_time');
         $data = $res['data'][0];
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
     /**
@@ -278,7 +278,7 @@ class test extends TestCase
             ]
         );
         $subset = array('id','name','rule','createTime');
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
         return $res['data']['id'];
     }
 
@@ -297,7 +297,7 @@ class test extends TestCase
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
         );
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
     /**
@@ -317,7 +317,7 @@ class test extends TestCase
         );
         $subset = array('vId','depId','vehicleType','driverName','lng','lat');
         $data = $res['data'][0];
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
     /**
@@ -336,7 +336,7 @@ class test extends TestCase
             ]
         );
         $subset = array('vId','alerts','plateNo','driverName','depId','alertTime','depName','vehicleType','plateColor');
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
     /**
@@ -364,7 +364,7 @@ class test extends TestCase
             ]
         );
         $subset = array('depId','depName','ratio','trends');
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
     /**
@@ -392,7 +392,7 @@ class test extends TestCase
             ]
         );
         $subset = array('depId','depName','ratio');
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
     /**
@@ -430,7 +430,7 @@ class test extends TestCase
         if ($res['data'] !== ''){
             $subset = array('id','vId','plateNo','depId','depName','alertType','alertPosition','endPosition','alertValue','alertUnit','gps');
         }
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
     /**
@@ -456,7 +456,7 @@ class test extends TestCase
             ]
         );
         $subset = array('vId','plateNo','depId','depName','daySegments');
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
     /**
@@ -479,7 +479,7 @@ class test extends TestCase
         //有可能有0下标 $subset_data
         $subset_data = array('id','vehicleType','plateNo','plateColor','simNo','vin','online','status','videoChannelNum','videoChannelName','depId','depName','driverName','updateTime','fuelStatus');
         $subset_mate = array('depId','depName','counts');
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
     /**
@@ -503,7 +503,7 @@ class test extends TestCase
             ]
         );
         $subset = array('vId','plateNo','depId','depName','trips');
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
     /**
@@ -522,7 +522,7 @@ class test extends TestCase
             ]
         );
         $subset = array('source','name','index');
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
     /**
@@ -539,7 +539,7 @@ class test extends TestCase
                 'cookie: IPCS-SESSIONID='.$code[2]
             ]
         );
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
     /**
@@ -575,7 +575,7 @@ class test extends TestCase
         );
         //$res['data'][0] data下有可能为空 表示无视频
         $subset = array('id','startTime','endTime','uploadTime','fileType','channel','size','path','downloadUrl','uploadType');
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
     /**
@@ -593,7 +593,7 @@ class test extends TestCase
             ]
         );
         $subset = array('taskId','status');
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
         return $file_id;
     }
 
@@ -613,7 +613,7 @@ class test extends TestCase
             ]
         );
         $subset = array('status');   // errorMessage 可选参数
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
     /**
@@ -634,7 +634,7 @@ class test extends TestCase
             ]
         );
         $subset = array('status');
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
     /**
@@ -663,7 +663,7 @@ class test extends TestCase
             ]
         );
         $subset = array('source','name','index');
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
 //    /**
@@ -684,7 +684,7 @@ class test extends TestCase
 //        // {
 //        //     message: "视频暂停成功"
 //        //  }
-//        $this->assertEquals("200", "200", $res['msg']);
+//        $this->assertEquals(200, 200, $res['msg']);
 //    }
 //
 //    /**
@@ -700,7 +700,7 @@ class test extends TestCase
 //            ]
 //        );
 //        $subset = array('vId','plateNo','depId','lat','lng','isMove','isAlert','areaCode');
-//        $this->assertEquals("200", $res['status'], $res['msg']);
+//        $this->assertEquals(200, $res['status'], $res['msg']);
 //    }
 
     /**
@@ -716,7 +716,7 @@ class test extends TestCase
             ]
         );
         $subset = array('filePath');
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
     /**
@@ -733,7 +733,7 @@ class test extends TestCase
         );
         //$res['data'][0]
         $subset = array('areaCode','name');
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 //
 //    /**
@@ -749,7 +749,7 @@ class test extends TestCase
 //            ]
 //        );
 //        $subset = array('depId','depName','count','ratio');
-//        $this->assertEquals("200", $res['status'], $res['msg']);
+//        $this->assertEquals(200, $res['status'], $res['msg']);
 //    }
 //
 //    /**
@@ -773,7 +773,7 @@ class test extends TestCase
 //            ]
 //        );
 //        $subset = array('areaCode','areaName','count','ratio');
-//        $this->assertEquals("200", $res['status'], $res['msg']);
+//        $this->assertEquals(200, $res['status'], $res['msg']);
 //    }
 //
 //    /**
@@ -789,7 +789,7 @@ class test extends TestCase
 //            ]
 //        );
 //        $subset = array('areaCode','areaName','count','ratio');
-//        $this->assertEquals("200", $res['status'], $res['msg']);
+//        $this->assertEquals(200, $res['status'], $res['msg']);
 //    }
 //
 //    /**
@@ -813,7 +813,7 @@ class test extends TestCase
 //            ]
 //        );
 //        $subset = array('areaCode','areaName','vehicleCount','ratio');
-//        $this->assertEquals("200", $res['status'], $res['msg']);
+//        $this->assertEquals(200, $res['status'], $res['msg']);
 //    }
 
     /**
@@ -839,7 +839,7 @@ class test extends TestCase
             ]
         );
         $subset = array('areaCode','areaName','counts');
-        $this->assertEquals("200", $res['status'], $res['msg']);
+        $this->assertEquals(200, $res['status'], $res['msg']);
     }
 
 //    /**
@@ -854,7 +854,7 @@ class test extends TestCase
 //                'cookie: IPCS-SESSIONID='.$code[2]
 //            ]
 //        );
-//        $this->assertEquals("200", $res['status'], $res['msg']);
+//        $this->assertEquals(200, $res['status'], $res['msg']);
 //    }
 
 }
