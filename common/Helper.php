@@ -4,7 +4,7 @@ namespace Common;
 class Helper
 {
 
-    function getUrl($url, $headerArray = array("Content-type:application/json;", "Accept:application/json", "Expect: "))
+    function getsUrl($url, $headerArray = array("Content-type:application/json;", "Accept:application/json", "Expect: "))
     {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -18,6 +18,22 @@ class Helper
         }
         $output = curl_exec($ch);
         curl_getinfo($ch, CURLINFO_HEADER_OUT);
+        return $output;
+    }
+
+    function getUrl($url, $headerArray = array("Content-type:application/json;", "Accept:application/json", "Expect: "))
+    {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        if ($headerArray) {
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headerArray);
+        }
+        $output = curl_exec($ch);
+        curl_close($ch);
+        $output = json_decode($output, true);
         return $output;
     }
 
@@ -54,6 +70,7 @@ class Helper
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);//SSL认证。
         $output = curl_exec($ch);
         curl_close($ch);
+        $output = json_decode($output, true);
 
         return $output;
 
@@ -72,7 +89,7 @@ class Helper
 
 
         curl_close($ch);//关闭
-        return $res;
+        return json_decode($res, true);
     }
 
 }

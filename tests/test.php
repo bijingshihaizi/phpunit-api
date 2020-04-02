@@ -11,7 +11,7 @@ class test extends TestCase
     public function testVerifyCode()
     {
         $helper = new Helper();
-        $res = $helper->getUrl(
+        $res = $helper->getsUrl(
             self::Ip . '/verify-code'
         );
         preg_match('/IPCS-SESSIONID=(.*?);/',$res,$m);
@@ -60,11 +60,11 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . '/profile',
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('loginTime','roleName','name','mobile','id','username');
-        $res = json_decode($res,true);
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
