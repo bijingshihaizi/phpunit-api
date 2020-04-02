@@ -68,20 +68,6 @@ class test extends TestCase
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
-    /**
-     * 用户退出
-     * @depends testVerifyCode
-     */
-    public function testLogout($code){
-        $helper = new Helper();
-        $res = $helper->delUrl(
-            self::Ip . '/logout',
-            [
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
-        $this->assertEquals(200, $res['status'], $res['message']);
-    }
 
     /**
      * 修改密码
@@ -856,6 +842,21 @@ class test extends TestCase
 //        );
 //        $this->assertEquals(200, $res['status'], $res['message']);
 //    }
+
+    /**
+     * 用户退出
+     * @depends testVerifyCode
+     */
+    public function testLogout($code){
+        $helper = new Helper();
+        $res = $helper->delUrl(
+            self::Ip . '/logout',
+            [
+                'cookie: IPCS-SESSIONID='.$code[1]
+            ]
+        );
+        $this->assertEquals(200, $res['status'], $res['message']);
+    }
 
 }
 
