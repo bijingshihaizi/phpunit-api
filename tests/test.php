@@ -23,7 +23,6 @@ class test extends TestCase
         $a = $redis->hGetAll( "spring:session:sessions:".$sessionId); //设置测试key
         $this->assertEquals(1, 1, '生成验证码失败');
         preg_match('/([a-zA-Z0-9]{4})/', $a['sessionAttr:random_validate_code'], $res);
-        var_dump(array_merge($m,$res));
         return array_merge($m,$res);
     }
 
@@ -61,9 +60,10 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . '/profile',
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
+        $subset = array('loginTime','roleName','name','mobile','id','username');
         $res = json_decode($res,true);
         $this->assertEquals(200, $res['status'], $res['message']);
     }
@@ -77,7 +77,7 @@ class test extends TestCase
         $res = $helper->delUrl(
             self::Ip . '/logout',
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $this->assertEquals(200, $res['status'], $res['message']);
@@ -94,7 +94,7 @@ class test extends TestCase
             self::Ip . '/password', //url
             ['oldPsd' => $oldPsd, 'newPsd' => '123321'], //params
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $this->assertEquals(200, $res['status'], $res['message']);
@@ -109,7 +109,7 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . '/departments',
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array ('id','name','pid');
@@ -127,7 +127,7 @@ class test extends TestCase
             self::Ip . '/query-vehicles',
             $ids,
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('id','vehicleType','plateNo','plateColor','simNo','vin','online','status','channels','position','depId','depName','driverName','updateTime','fuelStatus');
@@ -157,7 +157,7 @@ class test extends TestCase
         $res = $helper->getUrl(
             $url,
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('id','vehicleType','plateNo','plateColor','simNo','vin','online','status','channels','position','depId','depName','driverName','updateTime','fuelStatus');
@@ -173,7 +173,7 @@ class test extends TestCase
 //        $res = $helper->getUrl(
 //            self::Ip . '/vehicles/:id/real-time',
 //            [
-//                'cookie: IPCS-SESSIONID='.$code[2]
+//                'cookie: IPCS-SESSIONID='.$code[1]
 //            ]
 //        );
 //        $this->assertEquals(200, $res['status'], $res['message']);
@@ -190,7 +190,7 @@ class test extends TestCase
             self::Ip . '/vehicles/275728/fuel-control',
             $fuel_status,
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $this->assertEquals(200, $res['status'], $res['message']);
@@ -205,7 +205,7 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . '/vehicles/275728/fuel-status',
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('fuelStatus','controlStatus');
@@ -229,7 +229,7 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . '/vehicles/275728/fuel-control-log?' . http_build_query($http_query),
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('plateNo','controlStatus','createTime','userName');
@@ -255,7 +255,7 @@ class test extends TestCase
         $res = $helper->getUrl(
             $url.'?'.http_build_query($http_query),
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('id','name','level','type','rule','createTime','expire_time');
@@ -274,7 +274,7 @@ class test extends TestCase
             self::Ip . '/alert-types',
             $arr,
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('id','name','rule','createTime');
@@ -294,7 +294,7 @@ class test extends TestCase
         $res = $helper->delUrl(
             self::Ip . '/alert-types/'.$id,
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $this->assertEquals(200, $res['status'], $res['message']);
@@ -312,7 +312,7 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . '/current-alerts',
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('vId','depId','vehicleType','driverName','lng','lat');
@@ -332,7 +332,7 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . ' vehicles/275728/current-alerts',
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('vId','alerts','plateNo','driverName','depId','alertTime','depName','vehicleType','plateColor');
@@ -360,7 +360,7 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . '/alerts/trend?' . http_build_query($http_query),
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('depId','depName','ratio','trends');
@@ -388,7 +388,7 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . '/alerts-rank?' . http_build_query($http_query),
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('depId','depName','ratio');
@@ -423,7 +423,7 @@ class test extends TestCase
         $res = $helper->getUrl(
             $url,
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         //无报警情况$res['data'] == null
@@ -452,7 +452,7 @@ class test extends TestCase
         $res = $helper->getUrl(
             $url = self::Ip . '/alerts?' . http_build_query($http_query),
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('vId','plateNo','depId','depName','daySegments');
@@ -473,7 +473,7 @@ class test extends TestCase
             $url = self::Ip . '/search-vehicles',
             ['startTime'=>$start_time,'endTime'=>$end_time,'shapes'=>$shapes,'depId'=>$depid],
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         //有可能有0下标 $subset_data
@@ -499,7 +499,7 @@ class test extends TestCase
         $res = $helper->getUrl(
             $url = self::Ip . '/vehicles/275728/trips?' . http_build_query($http_query),
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('vId','plateNo','depId','depName','trips');
@@ -518,7 +518,7 @@ class test extends TestCase
             $url = self::Ip . '/vehicles/275728/live',
             ['index'=>$index,'type'=>$type],
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('source','name','index');
@@ -536,7 +536,7 @@ class test extends TestCase
             $url = self::Ip . '/vehicles/275728/stop-live',
             ['channel'=>$channel],
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $this->assertEquals(200, $res['status'], $res['message']);
@@ -570,7 +570,7 @@ class test extends TestCase
         $res = $helper->getUrl(
             $url,
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         //$res['data'][0] data下有可能为空 表示无视频
@@ -589,7 +589,7 @@ class test extends TestCase
             self::Ip . 'vehicles/275728/upload-video',
             ['fileId'=>$file_id],
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('taskId','status');
@@ -609,7 +609,7 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . '/file-tasks/'.$id,
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('status');   // errorMessage 可选参数
@@ -630,7 +630,7 @@ class test extends TestCase
             self::Ip . '/file-tasks/'.$id.'/status',
             ['action'=>$action],
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('status');
@@ -659,7 +659,7 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . '/vehicles/'.$file_id.'/play-video?' . http_build_query($http_query),
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('source','name','index');
@@ -678,7 +678,7 @@ class test extends TestCase
 //            self::Ip . '/vehicles/:id/play-status`',
 //            ['fileId'=>$file_id,'action'=>$action],
 //            [
-//                'cookie: IPCS-SESSIONID='.$code[2]
+//                'cookie: IPCS-SESSIONID='.$code[1]
 //            ]
 //        );
 //        // {
@@ -696,7 +696,7 @@ class test extends TestCase
 //        $res = $helper->getUrl(
 //            self::Ip . '/locations/all-vehicle',
 //            [
-//                'cookie: IPCS-SESSIONID='.$code[2]
+//                'cookie: IPCS-SESSIONID='.$code[1]
 //            ]
 //        );
 //        $subset = array('vId','plateNo','depId','lat','lng','isMove','isAlert','areaCode');
@@ -712,7 +712,7 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . '/caches/vehicles',
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('filePath');
@@ -728,7 +728,7 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . '/area-codes',
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         //$res['data'][0]
@@ -745,7 +745,7 @@ class test extends TestCase
 //        $res = $helper->getUrl(
 //            self::Ip . '/statistics/dep-vehicles',
 //            [
-//                'cookie: IPCS-SESSIONID='.$code[2]
+//                'cookie: IPCS-SESSIONID='.$code[1]
 //            ]
 //        );
 //        $subset = array('depId','depName','count','ratio');
@@ -769,7 +769,7 @@ class test extends TestCase
 //        $res = $helper->getUrl(
 //            self::Ip . '/statistics/dep-vehicles/area-rank?' . http_build_query($http_query),
 //            [
-//                'cookie: IPCS-SESSIONID='.$code[2]
+//                'cookie: IPCS-SESSIONID='.$code[1]
 //            ]
 //        );
 //        $subset = array('areaCode','areaName','count','ratio');
@@ -785,7 +785,7 @@ class test extends TestCase
 //        $res = $helper->getUrl(
 //            self::Ip . '/statistics/current-alerts',
 //            [
-//                'cookie: IPCS-SESSIONID='.$code[2]
+//                'cookie: IPCS-SESSIONID='.$code[1]
 //            ]
 //        );
 //        $subset = array('areaCode','areaName','count','ratio');
@@ -809,7 +809,7 @@ class test extends TestCase
 //        $res = $helper->getUrl(
 //            self::Ip . '/statistics/current-alerts?' . http_build_query($http_query),
 //            [
-//                'cookie: IPCS-SESSIONID='.$code[2]
+//                'cookie: IPCS-SESSIONID='.$code[1]
 //            ]
 //        );
 //        $subset = array('areaCode','areaName','vehicleCount','ratio');
@@ -835,7 +835,7 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . '/current-alerts/detail?' . http_build_query($http_query),
             [
-                'cookie: IPCS-SESSIONID='.$code[2]
+                'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('areaCode','areaName','counts');
@@ -851,7 +851,7 @@ class test extends TestCase
 //        $res = $helper->getUrl(
 //            self::Ip . '/alerts/:id',
 //            [
-//                'cookie: IPCS-SESSIONID='.$code[2]
+//                'cookie: IPCS-SESSIONID='.$code[1]
 //            ]
 //        );
 //        $this->assertEquals(200, $res['status'], $res['message']);
