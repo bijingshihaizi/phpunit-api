@@ -85,12 +85,13 @@ class Helper
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header);//定义header
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data); //定义提交的数据
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);//这个是重点。
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         $res = curl_exec($ch);
-
 
         curl_close($ch);//关闭
         return json_decode($res, true);
     }
+
 
 }
 

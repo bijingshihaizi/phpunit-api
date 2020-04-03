@@ -2,11 +2,18 @@
 require __DIR__.'/../common/Helper.php';
 use PHPUnit\Framework\TestCase;
 use Common\helper;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xls;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class test extends TestCase
 {
 
     const Ip = "https://ipcs.iov-smart.net/zeus/api/v1";
+    private $ip = '39.105.152.25';
+    private $port = '6379';
+    private $auth = 'pprt123';
+    private $cache_key = 'phpunit:ipcs';
 
     public function testVerifyCode()
     {
@@ -16,10 +23,7 @@ class test extends TestCase
         );
         preg_match('/IPCS-SESSIONID=(.*?);/',$res,$m);
         $sessionId = $m[1];
-        $redis = new Redis();
-        $redis->connect('39.105.152.25', 6379); //连接Redis
-        $redis->auth('pprt123'); //密码验证
-        $redis->select(30);//选择数据库2
+        $redis = $this->cache(30);
         $a = $redis->hGetAll( "spring:session:sessions:".$sessionId); //设置测试key
         $this->assertEquals(1, 1, '生成验证码失败');
         preg_match('/([a-zA-Z0-9]{4})/', $a['sessionAttr:random_validate_code'], $res);
@@ -65,8 +69,27 @@ class test extends TestCase
             ]
         );
         $subset = array('loginTime','roleName','name','mobile','id','username');
+        $msg = '';
+        if ($res['status'] == 200) {
+            foreach ($subset as $v) {
+                if (array_key_exists($v, $res['data']) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '获取用户信息',
+            self::Ip . '/profile',
+            'null',
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
         $this->assertEquals(200, $res['status'], $res['message']);
     }
+
 
 
     /**
@@ -80,9 +103,22 @@ class test extends TestCase
             self::Ip . '/password', //url
             ['oldPsd' => $oldPsd, 'newPsd' => '123321'], //params
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
+        $msg = '';
+        $excelData = [
+            '修改密码',
+            self::Ip . '/password',
+            ['oldPsd' => $oldPsd, 'newPsd' => '123321'],
+            'null',
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -95,10 +131,30 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . '/departments',
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array ('id','name','pid');
+        $msg = '';
+        if ($res['status'] == 200) {
+            foreach ($subset as $v) {
+                if (array_key_exists($v, $res['data']) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '车辆组列表',
+            self::Ip . '/departments',
+            'null',
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -113,10 +169,30 @@ class test extends TestCase
             self::Ip . '/query-vehicles',
             $ids,
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('id','vehicleType','plateNo','plateColor','simNo','vin','online','status','channels','position','depId','depName','driverName','updateTime','fuelStatus');
+        $msg = '';
+        if ($res['status'] == 200) {
+            foreach ($subset as $v) {
+                if (array_key_exists($v, $res['data']) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '根据车辆ID数组查询车辆',
+            self::Ip . '/query-vehicles',
+            '车辆id数组 ：'.json_encode(array('275728')),
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -143,28 +219,48 @@ class test extends TestCase
         $res = $helper->getUrl(
             $url,
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('id','vehicleType','plateNo','plateColor','simNo','vin','online','status','channels','position','depId','depName','driverName','updateTime','fuelStatus');
+        $msg = '';
+        if ($res['status'] == 200) {
+            foreach ($subset as $v) {
+                if (array_key_exists($v, $res['data']) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '模糊查询车辆',
+            $url,
+            'queryString,areaCode,depId',
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
-//    /**
-//     * 实时视频  查询车辆实时视频参数
-//     * @depends testVerifyCode
-//     */
-//    public function testRealTime($code){
-//        $helper = new Helper();
-//        $res = $helper->getUrl(
-//            self::Ip . '/vehicles/:id/real-time',
-//            [
-//                'cookie: IPCS-SESSIONID='.$code[1]
-//            ]
-//        );
-//        $this->assertEquals(200, $res['status'], $res['message']);
-//    }
-
+////    /**
+////     * 实时视频  查询车辆实时视频参数
+////     * @depends testVerifyCode
+////     */
+////    public function testRealTime($code){
+////        $helper = new Helper();
+////        $res = $helper->getUrl(
+////            self::Ip . '/vehicles/:id/real-time',
+////            [
+////                'cookie: IPCS-SESSIONID='.$code[1]
+////            ]
+////        );
+////        $this->assertEquals(200, $res['status'], $res['message']);
+////    }
+//
     /**
      * 车辆控制  油电控制
      * @depends testVerifyCode
@@ -176,9 +272,22 @@ class test extends TestCase
             self::Ip . '/vehicles/275728/fuel-control',
             $fuel_status,
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
+        $msg = '';
+        $excelData = [
+            '油电控制',
+            self::Ip . '/vehicles/275728/fuel-control',
+            'fuelStatus',
+            'null',
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -191,10 +300,30 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . '/vehicles/275728/fuel-status',
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('fuelStatus','controlStatus');
+        $msg = '';
+        if ($res['status'] == 200) {
+            foreach ($subset as $v) {
+                if (array_key_exists($v, $res['data']) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '获取车辆油电状态',
+            self::Ip . '/vehicles/275728/fuel-status',
+            'null',
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -215,10 +344,30 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . '/vehicles/275728/fuel-control-log?' . http_build_query($http_query),
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('plateNo','controlStatus','createTime','userName');
+        $msg = '';
+        if ($res['status'] == 200) {
+            foreach ($subset as $v) {
+                if (array_key_exists($v, $res['data']) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '获取用户油电操作日志',
+            self::Ip . '/vehicles/275728/fuel-control-log?' . http_build_query($http_query),
+            'startTime,endTime',
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -241,11 +390,30 @@ class test extends TestCase
         $res = $helper->getUrl(
             $url.'?'.http_build_query($http_query),
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('id','name','level','type','rule','createTime','expire_time');
-        $data = $res['data'][0];
+        $msg = '';
+        if ($res['status'] == 200) {
+            foreach ($subset as $v) {
+                if (array_key_exists($v, $res['data'][0]) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '获取报警类型',
+            $url.'?'.http_build_query($http_query),
+            'null',
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -260,10 +428,30 @@ class test extends TestCase
             self::Ip . '/alert-types',
             $arr,
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('id','name','rule','createTime');
+        $msg = '';
+        if ($res['status'] == 200) {
+            foreach ($subset as $v) {
+                if (array_key_exists($v, $res['data']) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '创建区域报警',
+            self::Ip . '/alert-types',
+            json_encode($arr),
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
         return $res['data']['id'];
     }
@@ -280,9 +468,22 @@ class test extends TestCase
         $res = $helper->delUrl(
             self::Ip . '/alert-types/'.$id,
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
+        $msg = '';
+        $excelData = [
+            '删除区域报警',
+            self::Ip . '/alert-types/'.$id,
+            'null',
+            'null',
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -291,18 +492,42 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testCurrentAlerts($code){
-        $depld = '-1';
+        $depid = '-1';
         $alert_type_id = '-1';
         $area_code = '110000';
+        $http_query = [
+            'depId' => $depid,
+            'alertTypeId' =>$alert_type_id,
+            'areaCode' => $area_code
+        ];
         $helper = new Helper();
         $res = $helper->getUrl(
-            self::Ip . '/current-alerts',
+            self::Ip . '/current-alerts'.http_build_query($http_query),
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('vId','depId','vehicleType','driverName','lng','lat');
-        $data = $res['data'][0];
+        $msg = '';
+        if ($res['status'] == 200) {
+            foreach ($subset as $v) {
+                if (array_key_exists($v, $res['data'][0]) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '获取正在发生的报警信息',
+            self::Ip . '/current-alerts'.http_build_query($http_query),
+            json_encode($http_query),
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -311,17 +536,34 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testIdCurrentAlerts($code){
-        $depld = '-1';
-        $alert_type_id = '-1';
-        $area_code = '110000';
         $helper = new Helper();
         $res = $helper->getUrl(
-            self::Ip . ' vehicles/275728/current-alerts',
+            self::Ip . '/vehicles/275728/current-alerts',
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('vId','alerts','plateNo','driverName','depId','alertTime','depName','vehicleType','plateColor');
+        $msg = '';
+        if ($res['status'] == 200) {
+            foreach ($subset as $v) {
+                if (array_key_exists($v, $res['data']) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '获取指定车辆当前的告警信息',
+            self::Ip . '/vehicles/275728/current-alerts',
+            'null',
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -346,10 +588,30 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . '/alerts/trend?' . http_build_query($http_query),
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('depId','depName','ratio','trends');
+        $msg = '';
+        if ($res['status'] == 200) {
+            foreach ($subset as $v) {
+                if (array_key_exists($v, $res['data']) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '报警趋势',
+            self::Ip . '/alerts/trend?' . http_build_query($http_query),
+            json_encode($http_query),
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -374,10 +636,30 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . '/alerts-rank?' . http_build_query($http_query),
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('depId','depName','ratio');
+        $msg = '';
+        if ($res['status'] == 200) {
+            foreach ($subset as $v) {
+                if (array_key_exists($v, $res['data']) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '总报警排行',
+            self::Ip . '/alerts-rank?' . http_build_query($http_query),
+            json_encode($http_query),
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -409,13 +691,33 @@ class test extends TestCase
         $res = $helper->getUrl(
             $url,
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
+        $msg = '';
         //无报警情况$res['data'] == null
         if ($res['data'] !== ''){
             $subset = array('id','vId','plateNo','depId','depName','alertType','alertPosition','endPosition','alertValue','alertUnit','gps');
+            if ($res['status'] == 200) {
+                foreach ($subset as $v) {
+                    if (array_key_exists($v, $res['data']) == false) {
+                        $msg .= $v . ' not exsit!'. PHP_EOL;
+                    }
+                }
+            }
         }
+        $excelData = [
+            '获取车辆报警历史',
+            $url,
+            json_encode($http_query),
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -438,10 +740,30 @@ class test extends TestCase
         $res = $helper->getUrl(
             $url = self::Ip . '/alerts?' . http_build_query($http_query),
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('vId','plateNo','depId','depName','daySegments');
+        $msg = '';
+        if ($res['status'] == 200) {
+            foreach ($subset as $v) {
+                if (array_key_exists($v, $res['data']) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '获取车辆轨迹信息',
+            $url = self::Ip . '/alerts?' . http_build_query($http_query),
+            json_encode($http_query),
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -459,12 +781,43 @@ class test extends TestCase
             $url = self::Ip . '/search-vehicles',
             ['startTime'=>$start_time,'endTime'=>$end_time,'shapes'=>$shapes,'depId'=>$depid],
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         //有可能有0下标 $subset_data
         $subset_data = array('id','vehicleType','plateNo','plateColor','simNo','vin','online','status','videoChannelNum','videoChannelName','depId','depName','driverName','updateTime','fuelStatus');
         $subset_mate = array('depId','depName','counts');
+        $msg = '';
+        if ($res['status'] == 200) {
+            foreach ($subset_data as $v) {
+                if (array_key_exists(0,$res['data'])){
+                    if (array_key_exists($v, $res['data'][0]) == false) {
+                        $msg .= $v . ' not exsit!'. PHP_EOL;
+                    }
+                }else{
+                    if (array_key_exists($v, $res['data']) == false) {
+                        $msg .= $v . ' not exsit!'. PHP_EOL;
+                    }
+                }
+            }
+            foreach ($subset_mate as $v) {
+                if (array_key_exists($v, $res['mate']) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '根据区域和事件查询车辆',
+            $url = self::Ip . '/search-vehicles',
+            json_encode(['startTime'=>$start_time,'endTime'=>$end_time,'shapes'=>$shapes,'depId'=>$depid]),
+            json_encode(array_merge($subset_data,$subset_mate)),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -485,10 +838,30 @@ class test extends TestCase
         $res = $helper->getUrl(
             $url = self::Ip . '/vehicles/275728/trips?' . http_build_query($http_query),
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('vId','plateNo','depId','depName','trips');
+        $msg = '';
+        if ($res['status'] == 200) {
+            foreach ($subset as $v) {
+                if (array_key_exists($v, $res['data']) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '获取车辆指定时间内的轨迹',
+            $url = self::Ip . '/vehicles/275728/trips?' . http_build_query($http_query),
+            json_encode($http_query),
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -504,10 +877,30 @@ class test extends TestCase
             $url = self::Ip . '/vehicles/275728/live',
             ['index'=>$index,'type'=>$type],
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('source','name','index');
+        $msg = '';
+        if ($res['status'] == 200) {
+            foreach ($subset as $v) {
+                if (array_key_exists($v, $res['data']) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '实时播放摄像头信息',
+            $url = self::Ip . '/vehicles/275728/live',
+            json_encode(['index'=>$index,'type'=>$type]),
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -522,9 +915,22 @@ class test extends TestCase
             $url = self::Ip . '/vehicles/275728/stop-live',
             ['channel'=>$channel],
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
+        $msg = '';
+        $excelData = [
+            '停止实时播放',
+            $url = self::Ip . '/vehicles/275728/stop-live',
+            $channel,
+            'null',
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -556,11 +962,34 @@ class test extends TestCase
         $res = $helper->getUrl(
             $url,
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         //$res['data'][0] data下有可能为空 表示无视频
         $subset = array('id','startTime','endTime','uploadTime','fileType','channel','size','path','downloadUrl','uploadType');
+        $msg = '';
+        if ($res['status'] == 200) {
+            if ($res['data'] == ''){
+                $msg .= '无视频文件';
+            }
+            foreach ($subset as $v) {
+                if (array_key_exists($v, $res['data'][0]) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '获取服务器上存储的视频文件',
+            $url,
+            json_encode($http_query),
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -575,10 +1004,30 @@ class test extends TestCase
             self::Ip . 'vehicles/275728/upload-video',
             ['fileId'=>$file_id],
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('taskId','status');
+        $msg = '';
+        if ($res['status'] == 200) {
+            foreach ($subset as $v) {
+                if (array_key_exists($v, $res['data']) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '获取服务器上存储的视频文件',
+            self::Ip . 'vehicles/275728/upload-video',
+            'null',
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
         return $file_id;
     }
@@ -595,10 +1044,30 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . '/file-tasks/'.$id,
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('status');   // errorMessage 可选参数
+        $msg = '';
+        if ($res['status'] == 200) {
+            foreach ($subset as $v) {
+                if (array_key_exists($v, $res['data']) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '获取文件上传状态',
+            self::Ip . '/file-tasks/'.$id,
+            'null',
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -616,10 +1085,30 @@ class test extends TestCase
             self::Ip . '/file-tasks/'.$id.'/status',
             ['action'=>$action],
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('status');
+        $msg = '';
+        if ($res['status'] == 200) {
+            foreach ($subset as $v) {
+                if (array_key_exists($v, $res['data']) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '（暂停/继续/取消）文件上传',
+            self::Ip . '/file-tasks/'.$id.'/status',
+            json_encode(['action'=>$action]),
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -645,10 +1134,30 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . '/vehicles/'.$file_id.'/play-video?' . http_build_query($http_query),
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('source','name','index');
+        $msg = '';
+        if ($res['status'] == 200) {
+            foreach ($subset as $v) {
+                if (array_key_exists($v, $res['data']) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '通知终端回放视频',
+            self::Ip . '/vehicles/'.$file_id.'/play-video?' . http_build_query($http_query),
+            json_encode($http_query),
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -698,10 +1207,30 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . '/caches/vehicles',
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('filePath');
+        $msg = '';
+        if ($res['status'] == 200) {
+            foreach ($subset as $v) {
+                if (array_key_exists($v, $res['data']) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '获取车辆位置信息缓存文件',
+            self::Ip . '/caches/vehicles',
+            'null',
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -714,11 +1243,31 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . '/area-codes',
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         //$res['data'][0]
         $subset = array('areaCode','name');
+        $msg = '';
+        if ($res['status'] == 200) {
+            foreach ($subset as $v) {
+                if (array_key_exists($v, $res['data'][0]) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '获取行政区域',
+            self::Ip . '/area-codes',
+            'null',
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 //
@@ -821,10 +1370,30 @@ class test extends TestCase
         $res = $helper->getUrl(
             self::Ip . '/current-alerts/detail?' . http_build_query($http_query),
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
         $subset = array('areaCode','areaName','counts');
+        $msg = '';
+        if ($res['status'] == 200) {
+            foreach ($subset as $v) {
+                if (array_key_exists($v, $res['data']) == false) {
+                    $msg .= $v . ' not exsit!'. PHP_EOL;
+                }
+            }
+        }
+        $excelData = [
+            '单个组织当日报警排行——获取报警详情',
+            self::Ip . '/current-alerts/detail?' . http_build_query($http_query),
+            json_encode($http_query),
+            json_encode($subset),
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+
         $this->assertEquals(200, $res['status'], $res['message']);
     }
 
@@ -852,10 +1421,127 @@ class test extends TestCase
         $res = $helper->delUrl(
             self::Ip . '/logout',
             [
+                'Content-Type:application/json',
                 'cookie: IPCS-SESSIONID='.$code[1]
             ]
         );
+        $msg = '';
+        $excelData = [
+            '用户退出',
+            self::Ip . '/logout',
+            'null',
+            'null',
+            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
+            $res['message'] . PHP_EOL . $msg
+        ];
+        $redis = $this->cache(7);
+        $redis->rpush($this->cache_key, json_encode($excelData));
+        $this->exportData();
         $this->assertEquals(200, $res['status'], $res['message']);
+    }
+
+    public function cache($db){
+        $redis = new Redis();
+        $redis->connect($this->ip, $this->port); //连接Redis
+        $redis->auth($this->auth); //密码验证
+        $redis->select($db);//选择数据库2
+        return $redis;
+    }
+
+    private function exportData()
+    {
+        //取出来缓存数据，并立即进行删除操作
+        $redis = $this->cache(7);
+        $testReport = $redis->lrange($this->cache_key, 0, -1);
+        $redis->del($this->cache_key);
+        if (empty($testReport)) {
+            return false;
+        }
+        $spreadSheet = new Spreadsheet();
+        //单元格宽度
+        $spreadSheet->getActiveSheet()->getDefaultColumnDimension()->setWidth(30);
+        //行高
+        $spreadSheet->getActiveSheet()->getDefaultRowDimension()->setRowHeight(80);
+        $workSheet = $spreadSheet->getActiveSheet();
+        $workSheet->setTitle('API接口测试报告');
+
+        //title
+        $title = [
+            '序号', '接口名称', 'URL', '请求参数', '过滤参数', '返回参数', '测试结果'
+        ];
+        //列码
+        $titleLetter = range('A', 'G');
+
+        //先设置title
+        foreach ($titleLetter as $key => $value) {
+            $workSheet->setCellValue($value . '1', $title[$key]);
+        }
+
+        //循环将内容赋值对应的单元格
+        $i = 2;
+        foreach ($testReport as $key => $value) {
+            $value = json_decode($value, true);
+            $workSheet->setCellValue('A' . $i, $i - 1);
+            foreach ($value as $k => $v) {
+                $workSheet->setCellValue($titleLetter[$k + 1] . $i, $v);
+                //样式设置 - 单元格背景颜色
+                if ($k == count($value) - 1) {
+                    if (rtrim($v) == 'success') {
+                        $workSheet->getStyle($titleLetter[$k + 1] . $i)->getFill()
+                            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                            ->getStartColor()->setRGB('00FF00');
+                    } else {
+                        $workSheet->getStyle($titleLetter[$k + 1] . $i)->getFill()
+                            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                            ->getStartColor()->setRGB('FF0000');
+                    }
+                }
+            }
+            $i++;
+        }
+
+        //设置单元格水平、垂直居中
+        $styleArray = [
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER
+            ],
+        ];
+        $end = $i - 1;
+        $workSheet->getStyle('A1:G' . $end)->getAlignment()->setWrapText(true);
+        $workSheet->getStyle('A1:G' . $end)->applyFromArray($styleArray);
+
+        //样式设置 - 边框
+        $styleArray = [
+            'borders' => [
+                'outline' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THICK,
+                    'color' => ['argb' => 'FF0000'],
+                ],
+                'inside' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                ]
+            ],
+        ];
+        $workSheet->getStyle('A1:G' . $end)->applyFromArray($styleArray);
+
+        $writer = new Xls($spreadSheet);
+        //在test目录下创建record/PhpunitReport/对应日期目录
+        $dir = './PhpunitReport/' . date("Y-m-d");
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+        $writer->save($dir . '/ipcsTest.xls');
+        // csv
+        @unlink($dir . '/ipcsTest.csv');
+        $fp = fopen($dir . '/ipcsTest.csv', 'w');
+        unset($title[0]);
+        fputcsv($fp, $title);
+        foreach ($testReport as $value) {
+            $value = json_decode($value, true);
+            fputcsv($fp, $value);
+        }
+        fclose($fp);
     }
 
 }
