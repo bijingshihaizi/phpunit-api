@@ -1,33 +1,36 @@
 <?php
-require __DIR__.'/../common/Helper.php';
 use PHPUnit\Framework\TestCase;
-use Common\helper;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xls;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use GuzzleHttp\Psr7\Request;
+use GuzzleHttp\Client;
 
 class test extends TestCase
 {
-
     const Ip = "https://ipcs.iov-smart.net/zeus/api/v1";
     private $ip = '39.105.152.25';
     private $port = '6379';
     private $auth = 'pprt123';
     private $cache_key = 'phpunit:ipcs';
+    private $client;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->client = new Client();
+    }
 
     public function testVerifyCode()
     {
-        $helper = new Helper();
-        $res = $helper->getsUrl(
-            self::Ip . '/verify-code'
-        );
-        preg_match('/IPCS-SESSIONID=(.*?);/',$res,$m);
-        $sessionId = $m[1];
+        $res = $this->client->request('GET',self::Ip . '/verify-code');
+        $headers = $res->getHeader('Set-Cookie');
+        preg_match('/IPCS-SESSIONID=(.*?);/',$headers[0],$m);
         $redis = $this->cache(30);
-        $a = $redis->hGetAll( "spring:session:sessions:".$sessionId); //设置测试key
-        $this->assertEquals(1, 1, '生成验证码失败');
-        preg_match('/([a-zA-Z0-9]{4})/', $a['sessionAttr:random_validate_code'], $res);
-        return array_merge($m,$res);
+        $a = $redis->hGetAll( "spring:session:sessions:".$m[1]); //设置测试key
+        $this->assertEquals(200, $res->getStatusCode(), '');
+        preg_match('/([a-zA-Z0-9]{4})/', $a['sessionAttr:random_validate_code'], $n);
+        return array_merge($m,$n);
     }
 
     /**
@@ -36,23 +39,20 @@ class test extends TestCase
      */
     public function testLogin($code)
     {
-        $helper = new Helper();
-        $res = $helper->postUrl(
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
+        $res = $this->client->request(
+            'POST',
             self::Ip . '/login',
             [
-                'username' => 'admin',
-                'password' => '123321',
-                'randomCode' => $code[2]
-            ]
-            ,
-            [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
-        $token = $res['data'];
-        $this->assertEquals(200, $res['status'], $res['message']);
-        return $token;
+                'json' => [
+                    'username' => 'admin','password' => '123321','randomCode' => $code[2]
+                ],
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
+        $this->assertEquals(200, $res->getStatusCode(), '');
     }
 
     /**
@@ -60,66 +60,48 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testProfile($code){
-        $helper = new Helper();
-        $res = $helper->getUrl(
-            self::Ip . '/profile',
-            [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
+        $res = $this->client->request('GET',self::Ip . '/profile', [
+            'headers'=>
+                [
+                    'Content-Type:application/json'
+                ],
+            'cookies' => $cookieJar
+        ]);
         $subset = array('loginTime','roleName','name','mobile','id','username');
-        $msg = '';
-        if ($res['status'] == 200) {
-            foreach ($subset as $v) {
-                if (array_key_exists($v, $res['data']) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '获取用户信息',
-            self::Ip . '/profile',
-            'null',
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-        $this->assertEquals(200, $res['status'], $res['message']);
+        $title = '获取用户信息';
+        $url = self::Ip . '/profile';
+        $params = [];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200, $res->getStatusCode(), '');
     }
-
-
 
     /**
      * 修改密码
      * @depends testVerifyCode
      */
     public function testPassword($code){
-        $helper = new Helper();
-        $oldPsd = '123321';
-        $res = $helper->putUrl(
-            self::Ip . '/password', //url
-            ['oldPsd' => $oldPsd, 'newPsd' => '123321'], //params
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
+        $res = $this->client->request('PUT',
+            self::Ip . '/password',
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
+                'json' => [
+                    'oldPsd' => '123321', 'newPsd' => '123321'
+                ],
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
             ]
         );
-        $msg = '';
-        $excelData = [
-            '修改密码',
-            self::Ip . '/password',
-            ['oldPsd' => $oldPsd, 'newPsd' => '123321'],
-            'null',
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+        $subset = '';
+        $title = '修改密码';
+        $url = self::Ip . '/password';
+        $params = ['oldPsd' => '123321', 'newPsd' => '123321'];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
     /**
@@ -127,35 +109,22 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testDepartments($code){
-        $helper = new Helper();
-        $res = $helper->getUrl(
-            self::Ip . '/departments',
-            [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
+        $res = $this->client->request('GET',self::Ip . '/departments',[
+            'headers'=>
+                [
+                    'Content-Type:application/json'
+                ],
+            'cookies' => $cookieJar
+        ]);
         $subset = array ('id','name','pid');
-        $msg = '';
-        if ($res['status'] == 200) {
-            foreach ($subset as $v) {
-                if (array_key_exists($v, $res['data']) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '车辆组列表',
-            self::Ip . '/departments',
-            'null',
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+        $title = '修改密码';
+        $url = self::Ip . '/password';
+        $params = [];
+                $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
     /**
@@ -163,37 +132,26 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testQueryVehicles($code){
-        $helper = new Helper();
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
         $ids = array('275728'); //必填参数
-        $res = $helper->postUrl(
+        $res = $this->client->request(
+            'POST',
             self::Ip . '/query-vehicles',
-            $ids,
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
+                'json' => [
+                    'ids' => $ids
+                ],
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
         $subset = array('id','vehicleType','plateNo','plateColor','simNo','vin','online','status','channels','position','depId','depName','driverName','updateTime','fuelStatus');
-        $msg = '';
-        if ($res['status'] == 200) {
-            foreach ($subset as $v) {
-                if (array_key_exists($v, $res['data']) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '根据车辆ID数组查询车辆',
-            self::Ip . '/query-vehicles',
-            '车辆id数组 ：'.json_encode(array('275728')),
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+        $title = '根据车辆ID数组查询车辆';
+        $url = self::Ip . '/query-vehicles';
+        $params = ['ids' => $ids];
+                $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
     /**
@@ -201,13 +159,15 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testVeicles($code){
-        $queryString = '京';  //可为空
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
+        $queryString = '%E4%BA%AC';  //可为空
         $areaCode = '';     //可为空
         $depId = '';        //可为空
-        $helper = new Helper();
         $url = self::Ip . '/vehicles';
         if (!empty($queryString)){
-            $queryStrings = '&queryString='.$queryString ?? '';
+            $queryStrings = 'queryString='.$queryString ?? '';
         }elseif (!empty($areaCode)){
             $areaCodes = '&areaCode='.$areaCode ?? '';
         }elseif (!empty($depId)){
@@ -216,79 +176,44 @@ class test extends TestCase
         if (!empty($queryString) || !empty($areaCode) || !empty($depId)){
             $url = $url . '?' . $queryStrings . $areaCodes . $depIds;
         }
-        $res = $helper->getUrl(
-            $url,
-            [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
+        $res = $this->client->request('GET',$url,[
+            'headers'=>
+                [
+                    'Content-Type:application/json'
+                ],
+            'cookies' => $cookieJar
+        ]);
         $subset = array('id','vehicleType','plateNo','plateColor','simNo','vin','online','status','channels','position','depId','depName','driverName','updateTime','fuelStatus');
-        $msg = '';
-        if ($res['status'] == 200) {
-            foreach ($subset as $v) {
-                if (array_key_exists($v, $res['data']) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '模糊查询车辆',
-            $url,
-            'queryString,areaCode,depId',
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+        $title = '模糊查询车辆';
+        $params = [];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
-////    /**
-////     * 实时视频  查询车辆实时视频参数
-////     * @depends testVerifyCode
-////     */
-////    public function testRealTime($code){
-////        $helper = new Helper();
-////        $res = $helper->getUrl(
-////            self::Ip . '/vehicles/:id/real-time',
-////            [
-////                'cookie: IPCS-SESSIONID='.$code[1]
-////            ]
-////        );
-////        $this->assertEquals(200, $res['status'], $res['message']);
-////    }
-//
     /**
      * 车辆控制  油电控制
      * @depends testVerifyCode
      */
     public function testFuelControl($code){
-        $fuel_status = 1;
-        $helper = new Helper();
-        $res = $helper->putUrl(
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
+        $res = $this->client->request(
+            'PUT',
             self::Ip . '/vehicles/275728/fuel-control',
-            $fuel_status,
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
-        $msg = '';
-        $excelData = [
-            '油电控制',
-            self::Ip . '/vehicles/275728/fuel-control',
-            'fuelStatus',
-            'null',
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+                'json' => [
+                    'fuelStatus' => 1
+                ],
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
+        $subset = [];
+        $title = '油电控制';
+        $url = self::Ip . '/vehicles/275728/fuel-control';
+        $params = ['fuelStatus' => 1];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
     /**
@@ -296,35 +221,22 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testFuelStatsu($code){
-        $helper = new Helper();
-        $res = $helper->getUrl(
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
+        $res = $this->client->request(
+            'GET',
             self::Ip . '/vehicles/275728/fuel-status',
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
         $subset = array('fuelStatus','controlStatus');
-        $msg = '';
-        if ($res['status'] == 200) {
-            foreach ($subset as $v) {
-                if (array_key_exists($v, $res['data']) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '获取车辆油电状态',
-            self::Ip . '/vehicles/275728/fuel-status',
-            'null',
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+        $title = '获取车辆油电状态';
+        $url = self::Ip . '/vehicles/275728/fuel-status';
+        $params = [];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
     /**
@@ -332,43 +244,30 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testFuelControlLog($code){
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
         $start_time = '0';
         $end_time = '1585725963776';
-        $helper = new Helper();
 
         //拼接请求参数
         $http_query = [
             'startTime' => $start_time,
             'endTime' => $end_time,
         ];
-        $res = $helper->getUrl(
-            self::Ip . '/vehicles/275728/fuel-control-log?' . http_build_query($http_query),
+        $res = $this->client->request(
+            'GET',
+            self::Ip . 'fuel-control-log?' . http_build_query($http_query),
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
         $subset = array('plateNo','controlStatus','createTime','userName');
-        $msg = '';
-        if ($res['status'] == 200) {
-            foreach ($subset as $v) {
-                if (array_key_exists($v, $res['data']) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '获取用户油电操作日志',
-            self::Ip . '/vehicles/275728/fuel-control-log?' . http_build_query($http_query),
-            'startTime,endTime',
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+        $title = '获取用户油电操作日志';
+        $url = self::Ip . 'fuel-control-log?' . http_build_query($http_query);
+        $params = [];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
     /**
@@ -376,6 +275,9 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testGAlertTypes($code){
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
         $url = self::Ip . '/alert-types';
         $type = '';     //可为空
         $level = '';    //可为空
@@ -386,35 +288,19 @@ class test extends TestCase
         if (!empty($level)) {
             $http_query['level'] = $level;
         }
-        $helper = new Helper();
-        $res = $helper->getUrl(
+        $res = $this->client->request(
+            'GET',
             $url.'?'.http_build_query($http_query),
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
         $subset = array('id','name','level','type','rule','createTime','expire_time');
-        $msg = '';
-        if ($res['status'] == 200) {
-            foreach ($subset as $v) {
-                if (array_key_exists($v, $res['data'][0]) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '获取报警类型',
-            $url.'?'.http_build_query($http_query),
-            'null',
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+        $title = '获取报警类型';
+        $url = $url.'?'.http_build_query($http_query);
+        $params = [];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
     /**
@@ -422,38 +308,28 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testPAlertTypes($code){
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
         $arr = array('name'=>'unit测试','type'=>'fence','rule'=>['type'=>1,'circle'=>['radius'=>'430','lat'=>'39','lng'=>'116']]);
-        $helper = new Helper();
-        $res = $helper->postUrl(
+        $res = $this->client->request(
+            'POST',
             self::Ip . '/alert-types',
-            $arr,
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
+                'json' => [
+                    'name'=>'unit测试','type'=>'fence','rule'=>['type'=>1,'circle'=>['radius'=>'430','lat'=>'39','lng'=>'116']]
+                ],
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
         $subset = array('id','name','rule','createTime');
-        $msg = '';
-        if ($res['status'] == 200) {
-            foreach ($subset as $v) {
-                if (array_key_exists($v, $res['data']) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '创建区域报警',
-            self::Ip . '/alert-types',
-            json_encode($arr),
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
-        return $res['data']['id'];
+        $title = '创建区域报警';
+        $url = self::Ip . '/alert-types';
+        $params = ['name'=>'unit测试','type'=>'fence','rule'=>['type'=>1,'circle'=>['radius'=>'430','lat'=>'39','lng'=>'116']]];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
+        $datas = json_decode($res->getBody()->getContents(),true)['data'];
+        return $datas['id'];
     }
 
     /**
@@ -464,27 +340,22 @@ class test extends TestCase
      * @param $id
      */
     public function testDAlertTypes($code,$id){
-        $helper = new Helper();
-        $res = $helper->delUrl(
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
+        $res = $this->client->request(
+            'DELETE',
             self::Ip . '/alert-types/'.$id,
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
-        $msg = '';
-        $excelData = [
-            '删除区域报警',
-            self::Ip . '/alert-types/'.$id,
-            'null',
-            'null',
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
+        $subset = [];
+        $title = '删除区域报警';
+        $url = self::Ip . '/alert-types/'.$id;
+        $params = [];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
     /**
@@ -492,6 +363,9 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testCurrentAlerts($code){
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
         $depid = '-1';
         $alert_type_id = '-1';
         $area_code = '110000';
@@ -500,35 +374,19 @@ class test extends TestCase
             'alertTypeId' =>$alert_type_id,
             'areaCode' => $area_code
         ];
-        $helper = new Helper();
-        $res = $helper->getUrl(
+        $res = $this->client->request(
+            'GET',
             self::Ip . '/current-alerts'.http_build_query($http_query),
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
         $subset = array('vId','depId','vehicleType','driverName','lng','lat');
-        $msg = '';
-        if ($res['status'] == 200) {
-            foreach ($subset as $v) {
-                if (array_key_exists($v, $res['data'][0]) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '获取正在发生的报警信息',
-            self::Ip . '/current-alerts'.http_build_query($http_query),
-            json_encode($http_query),
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+        $title = '获取正在发生的报警信息';
+        $url = self::Ip . '/current-alerts'.http_build_query($http_query);
+        $params = [];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
     /**
@@ -536,35 +394,22 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testIdCurrentAlerts($code){
-        $helper = new Helper();
-        $res = $helper->getUrl(
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
+        $res = $this->client->request(
+            'GET',
             self::Ip . '/vehicles/275728/current-alerts',
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
         $subset = array('vId','alerts','plateNo','driverName','depId','alertTime','depName','vehicleType','plateColor');
-        $msg = '';
-        if ($res['status'] == 200) {
-            foreach ($subset as $v) {
-                if (array_key_exists($v, $res['data']) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '获取指定车辆当前的告警信息',
-            self::Ip . '/vehicles/275728/current-alerts',
-            'null',
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+        $title = '获取指定车辆当前的告警信息';
+        $url = self::Ip . '/vehicles/275728/current-alerts';
+        $params = [];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
     /**
@@ -572,11 +417,13 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testAlertTrend($code){
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
         $dep_ids = '6,4,7,5';
         $type_id = '1';
         $district = '30';
         $area_code = '110000';
-        $helper = new Helper();
 
         //组装请求参数
         $http_query = [
@@ -585,34 +432,20 @@ class test extends TestCase
             'district' => $district,
             'areaCode' => $area_code,
         ];
-        $res = $helper->getUrl(
+        $res = $this->client->request(
+            'GET',
             self::Ip . '/alerts/trend?' . http_build_query($http_query),
-            [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
-        $subset = array('depId','depName','ratio','trends');
-        $msg = '';
-        if ($res['status'] == 200) {
-            foreach ($subset as $v) {
-                if (array_key_exists($v, $res['data']) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '报警趋势',
-            self::Ip . '/alerts/trend?' . http_build_query($http_query),
-            json_encode($http_query),
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
 
-        $this->assertEquals(200, $res['status'], $res['message']);
+            [
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
+        $subset = array('depId','depName','ratio','trends');
+        $title = '报警趋势';
+        $url = self::Ip . '/alerts/trend?' . http_build_query($http_query);
+        $params = [];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
     /**
@@ -620,11 +453,13 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testAlertRank($code){
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
         $start_time = '1582992000000';
         $end_time = '1585670399999';
         $top = '4';
         $area_code = '110000';
-        $helper = new Helper();
 
         //组装请求参数
         $http_query = [
@@ -633,34 +468,20 @@ class test extends TestCase
             'top' => $top,
             'areaCode' => $area_code,
         ];
-        $res = $helper->getUrl(
-            self::Ip . '/alerts-rank?' . http_build_query($http_query),
-            [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
-        $subset = array('depId','depName','ratio');
-        $msg = '';
-        if ($res['status'] == 200) {
-            foreach ($subset as $v) {
-                if (array_key_exists($v, $res['data']) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '总报警排行',
-            self::Ip . '/alerts-rank?' . http_build_query($http_query),
-            json_encode($http_query),
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
+        $res = $this->client->request(
+            'GET',
+            self::Ip . '/alerts/rank?' . http_build_query($http_query),
 
-        $this->assertEquals(200, $res['status'], $res['message']);
+            [
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
+        $subset = array('depId','depName','ratio');
+        $title = '总报警排行';
+        $url = self::Ip . '/alerts/trend?' . http_build_query($http_query);
+        $params = [];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
     /**
@@ -668,6 +489,9 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testAlerts($code){
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
         $vid = '275728';
         $depid = '';
         $alert_typeid = '-1';
@@ -687,38 +511,18 @@ class test extends TestCase
             $http_query['depId'] = $depid;
             $url = self::Ip . '/alerts?' . http_build_query($http_query);
         }
-        $helper = new Helper();
-        $res = $helper->getUrl(
+        $res = $this->client->request(
+            'GET',
             $url,
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
-        $msg = '';
-        //无报警情况$res['data'] == null
-        if ($res['data'] !== ''){
-            $subset = array('id','vId','plateNo','depId','depName','alertType','alertPosition','endPosition','alertValue','alertUnit','gps');
-            if ($res['status'] == 200) {
-                foreach ($subset as $v) {
-                    if (array_key_exists($v, $res['data']) == false) {
-                        $msg .= $v . ' not exsit!'. PHP_EOL;
-                    }
-                }
-            }
-        }
-        $excelData = [
-            '获取车辆报警历史',
-            $url,
-            json_encode($http_query),
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
+        $subset = [];
+        $title = '总报警排行';
+        $params = [];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
     /**
@@ -726,10 +530,12 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testTrips($code){
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
         $start_time = '1585670400000';
         $end_time = '1585756799999';
         $vid = '275728';
-        $helper = new Helper();
 
         //组装请求参数
         $http_query = [
@@ -737,34 +543,19 @@ class test extends TestCase
             'startTime' => $start_time,
             'endTime' => $end_time,
         ];
-        $res = $helper->getUrl(
-            $url = self::Ip . '/alerts?' . http_build_query($http_query),
+        $res = $this->client->request(
+            'GET',
+            self::Ip . '/alerts?' . http_build_query($http_query),
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
         $subset = array('vId','plateNo','depId','depName','daySegments');
-        $msg = '';
-        if ($res['status'] == 200) {
-            foreach ($subset as $v) {
-                if (array_key_exists($v, $res['data']) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '获取车辆轨迹信息',
-            $url = self::Ip . '/alerts?' . http_build_query($http_query),
-            json_encode($http_query),
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+        $title = '总报警排行';
+        $url = self::Ip . '/alerts?' . http_build_query($http_query);
+        $params = [];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
     /**
@@ -772,53 +563,29 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testSearchVehicles($code){
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
         $start_time = '1585670400000';
         $end_time = '1585756799999';
         $shapes = ['type'=>1,'circle'=>['radius'=>'900','lat'=>'39','lng'=>'116']];
         $depid = '-1';
-        $helper = new Helper();
-        $res = $helper->postUrl(
-            $url = self::Ip . '/search-vehicles',
-            ['startTime'=>$start_time,'endTime'=>$end_time,'shapes'=>$shapes,'depId'=>$depid],
+        $res = $this->client->request(
+            'POST',
+            self::Ip . '/search-vehicles',
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
-        //有可能有0下标 $subset_data
-        $subset_data = array('id','vehicleType','plateNo','plateColor','simNo','vin','online','status','videoChannelNum','videoChannelName','depId','depName','driverName','updateTime','fuelStatus');
-        $subset_mate = array('depId','depName','counts');
-        $msg = '';
-        if ($res['status'] == 200) {
-            foreach ($subset_data as $v) {
-                if (array_key_exists(0,$res['data'])){
-                    if (array_key_exists($v, $res['data'][0]) == false) {
-                        $msg .= $v . ' not exsit!'. PHP_EOL;
-                    }
-                }else{
-                    if (array_key_exists($v, $res['data']) == false) {
-                        $msg .= $v . ' not exsit!'. PHP_EOL;
-                    }
-                }
-            }
-            foreach ($subset_mate as $v) {
-                if (array_key_exists($v, $res['mate']) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '根据区域和事件查询车辆',
-            $url = self::Ip . '/search-vehicles',
-            json_encode(['startTime'=>$start_time,'endTime'=>$end_time,'shapes'=>$shapes,'depId'=>$depid]),
-            json_encode(array_merge($subset_data,$subset_mate)),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
+                'json'=> ['startTime'=>$start_time,'endTime'=>$end_time,'shapes'=>$shapes,'depId'=>$depid],
 
-        $this->assertEquals(200, $res['status'], $res['message']);
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
+        //有可能有0下标 $subset_data
+        $subset = array('id','vehicleType','plateNo','plateColor','simNo','vin','online','status','videoChannelNum','videoChannelName','depId','depName','driverName','updateTime','fuelStatus');
+        $title = '根据区域和事件查询车辆';
+        $url = self::Ip . '/search-vehicles';
+        $params = ['startTime'=>$start_time,'endTime'=>$end_time,'shapes'=>$shapes,'depId'=>$depid];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
     /**
@@ -826,43 +593,30 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testVehiclesTrips($code){
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
         $start_time = '1585670400000';
         $end_time = '1585756799999';
-        $helper = new Helper();
 
         //组装请求参数
         $http_query = [
             'startTime' => $start_time,
             'endTime' => $end_time,
         ];
-        $res = $helper->getUrl(
-            $url = self::Ip . '/vehicles/275728/trips?' . http_build_query($http_query),
+        $res = $this->client->request(
+            'GET',
+            self::Ip . '/vehicles/275728/trips?' . http_build_query($http_query),
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
         $subset = array('vId','plateNo','depId','depName','trips');
-        $msg = '';
-        if ($res['status'] == 200) {
-            foreach ($subset as $v) {
-                if (array_key_exists($v, $res['data']) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '获取车辆指定时间内的轨迹',
-            $url = self::Ip . '/vehicles/275728/trips?' . http_build_query($http_query),
-            json_encode($http_query),
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+        $title = '获取车辆指定时间内的轨迹';
+        $url = self::Ip . '/vehicles/275728/trips?' . http_build_query($http_query);
+        $params = [];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
     /**
@@ -870,38 +624,25 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testLive($code){
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
         $index = '2';
         $type = 'hls';
-        $helper = new Helper();
-        $res = $helper->postUrl(
-            $url = self::Ip . '/vehicles/275728/live',
-            ['index'=>$index,'type'=>$type],
+        $res = $this->client->request(
+            'POST',
+            self::Ip . '/vehicles/275728/live',
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
+                'json' => ['index'=>$index,'type'=>$type],
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
         $subset = array('source','name','index');
-        $msg = '';
-        if ($res['status'] == 200) {
-            foreach ($subset as $v) {
-                if (array_key_exists($v, $res['data']) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '实时播放摄像头信息',
-            $url = self::Ip . '/vehicles/275728/live',
-            json_encode(['index'=>$index,'type'=>$type]),
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+        $title = '实时播放摄像头信息';
+        $url = self::Ip . '/vehicles/275728/live';
+        $params = ['index'=>$index,'type'=>$type];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
     /**
@@ -909,29 +650,23 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testStopLive($code){
-        $channel = 0;
-        $helper = new Helper();
-        $res = $helper->postUrl(
-            $url = self::Ip . '/vehicles/275728/stop-live',
-            ['channel'=>$channel],
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
+        $res = $this->client->request(
+            'POST',
+            self::Ip . '/vehicles/275728/stop-live',
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
-        $msg = '';
-        $excelData = [
-            '停止实时播放',
-            $url = self::Ip . '/vehicles/275728/stop-live',
-            $channel,
-            'null',
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+                'json' => ['channel'=>0],
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
+        $subset = [];
+        $title = '停止实时播放';
+        $url = self::Ip . '/vehicles/275728/stop-live';
+        $params = ['channel'=>0];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
     /**
@@ -939,6 +674,9 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testVideos($code){
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
         $type = '1';
         $start_time = '1585670400000';
         $end_time = '1585756799999';
@@ -958,77 +696,45 @@ class test extends TestCase
         if (!empty($storage_type)){
             $url .= '&storageType='.$storage_type;
         }
-        $helper = new Helper();
-        $res = $helper->getUrl(
+        $res = $this->client->request(
+            'GET',
             $url,
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
+
         //$res['data'][0] data下有可能为空 表示无视频
         $subset = array('id','startTime','endTime','uploadTime','fileType','channel','size','path','downloadUrl','uploadType');
-        $msg = '';
-        if ($res['status'] == 200) {
-            if ($res['data'] == ''){
-                $msg .= '无视频文件';
-            }
-            foreach ($subset as $v) {
-                if (array_key_exists($v, $res['data'][0]) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '获取服务器上存储的视频文件',
-            $url,
-            json_encode($http_query),
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+        $title = '获取服务器上存储的视频文件';
+        $params = [];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
     /**
-     * 视频回放  获取服务器上存储的视频文件
+     * 视频回放  通知终端向服务器上传视频
      * @depends testVerifyCode
      */
     public function testUploadVideo($code){
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
         $file_id = '65345';
-        $helper = new Helper();
-        $res = $helper->postUrl(
+        $res = $this->client->request(
+            'POST',
             self::Ip . 'vehicles/275728/upload-video',
-            ['fileId'=>$file_id],
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
+                'json'=>['fileId'=>$file_id],
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
         $subset = array('taskId','status');
-        $msg = '';
-        if ($res['status'] == 200) {
-            foreach ($subset as $v) {
-                if (array_key_exists($v, $res['data']) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '获取服务器上存储的视频文件',
-            self::Ip . 'vehicles/275728/upload-video',
-            'null',
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+        $title = '通知终端向服务器上传视频';
+        $url = self::Ip . 'vehicles/275728/upload-video';
+        $params = ['fileId'=>$file_id];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
         return $file_id;
     }
 
@@ -1040,35 +746,22 @@ class test extends TestCase
      * @param $id
      */
     public function testFileTaskId($code,$id){
-        $helper = new Helper();
-        $res = $helper->getUrl(
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
+        $res = $this->client->request(
+            'GET',
             self::Ip . '/file-tasks/'.$id,
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
         $subset = array('status');   // errorMessage 可选参数
-        $msg = '';
-        if ($res['status'] == 200) {
-            foreach ($subset as $v) {
-                if (array_key_exists($v, $res['data']) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '获取文件上传状态',
-            self::Ip . '/file-tasks/'.$id,
-            'null',
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+        $title = '获取文件上传状态';
+        $url = self::Ip . '/file-tasks/'.$id;
+        $params = [];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
     /**
@@ -1080,36 +773,23 @@ class test extends TestCase
      */
     public function testFileTasksStatus($code,$id){
         $action = 'cancel';
-        $helper = new Helper();
-        $res = $helper->putUrl(
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
+        $res = $this->client->request(
+            'PUT',
             self::Ip . '/file-tasks/'.$id.'/status',
-            ['action'=>$action],
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
+                'json'=>['action'=>$action],
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
         $subset = array('status');
-        $msg = '';
-        if ($res['status'] == 200) {
-            foreach ($subset as $v) {
-                if (array_key_exists($v, $res['data']) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '（暂停/继续/取消）文件上传',
-            self::Ip . '/file-tasks/'.$id.'/status',
-            json_encode(['action'=>$action]),
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+        $title = '视频回放  （暂停/继续/取消）文件上传';
+        $url = self::Ip . '/file-tasks/'.$id.'/status';
+        $params = ['action'=>$action];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
     /**
@@ -1120,10 +800,12 @@ class test extends TestCase
      * @param $id
      */
     public function testPlayVideo($code,$id){
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
         $file_id = $id;
         $start_time = '0';      //参数不准确
         $type = 'hls';
-        $helper = new Helper();
 
         //组装请求参数
         $http_query = [
@@ -1131,107 +813,42 @@ class test extends TestCase
             'startTime' => $start_time,
             'type' => $type,
         ];
-        $res = $helper->getUrl(
+        $res = $this->client->request(
+            'GET',
             self::Ip . '/vehicles/'.$file_id.'/play-video?' . http_build_query($http_query),
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
         $subset = array('source','name','index');
-        $msg = '';
-        if ($res['status'] == 200) {
-            foreach ($subset as $v) {
-                if (array_key_exists($v, $res['data']) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '通知终端回放视频',
-            self::Ip . '/vehicles/'.$file_id.'/play-video?' . http_build_query($http_query),
-            json_encode($http_query),
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+        $title = '通知终端回放视频';
+        $url = self::Ip . '/vehicles/'.$file_id.'/play-video?' . http_build_query($http_query);
+        $params = [];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
-
-//    /**
-//     * 视频回放  终端视频回放控制
-//     * @depends testVerifyCode
-//     */
-//    public function testPlayStatus($code){
-//        $file_id = '';
-//        $action = '';
-//        $helper = new Helper();
-//        $res = $helper->putUrl(
-//            self::Ip . '/vehicles/:id/play-status`',
-//            ['fileId'=>$file_id,'action'=>$action],
-//            [
-//                'cookie: IPCS-SESSIONID='.$code[1]
-//            ]
-//        );
-//        // {
-//        //     message: "视频暂停成功"
-//        //  }
-//        $this->assertEquals(200, 200, $res['message']);
-//    }
-//
-//    /**
-//     * 视频回放  获取全部车辆位置信息
-//     * @depends testVerifyCode
-//     */
-//    public function testAllVehicle($code){
-//        $helper = new Helper();
-//        $res = $helper->getUrl(
-//            self::Ip . '/locations/all-vehicle',
-//            [
-//                'cookie: IPCS-SESSIONID='.$code[1]
-//            ]
-//        );
-//        $subset = array('vId','plateNo','depId','lat','lng','isMove','isAlert','areaCode');
-//        $this->assertEquals(200, $res['status'], $res['message']);
-//    }
 
     /**
      * 视频回放  获取车辆位置信息缓存文件
      * @depends testVerifyCode
      */
     public function testCacheVehicles($code){
-        $helper = new Helper();
-        $res = $helper->getUrl(
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
+        $res = $this->client->request(
+            'GET',
             self::Ip . '/caches/vehicles',
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
         $subset = array('filePath');
-        $msg = '';
-        if ($res['status'] == 200) {
-            foreach ($subset as $v) {
-                if (array_key_exists($v, $res['data']) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '获取车辆位置信息缓存文件',
-            self::Ip . '/caches/vehicles',
-            'null',
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+        $title = '获取车辆位置信息缓存文件';
+        $url = self::Ip . '/caches/vehicles';
+        $params = [];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
     /**
@@ -1239,205 +856,107 @@ class test extends TestCase
      * @depends testVerifyCode
      */
     public function testAreaCodes($code){
-        $helper = new Helper();
-        $res = $helper->getUrl(
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
+        $res = $this->client->request(
+            'GET',
             self::Ip . '/area-codes',
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
-        //$res['data'][0]
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
         $subset = array('areaCode','name');
-        $msg = '';
-        if ($res['status'] == 200) {
-            foreach ($subset as $v) {
-                if (array_key_exists($v, $res['data'][0]) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '获取行政区域',
-            self::Ip . '/area-codes',
-            'null',
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+        $title = '获取行政区域';
+        $url = self::Ip . '/area-codes';
+        $params = [];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
-//
-//    /**
-//     * 视频回放  获取行政区域
-//     * @depends testVerifyCode
-//     */
-//    public function testStatistics($code){
-//        $helper = new Helper();
-//        $res = $helper->getUrl(
-//            self::Ip . '/statistics/dep-vehicles',
-//            [
-//                'cookie: IPCS-SESSIONID='.$code[1]
-//            ]
-//        );
-//        $subset = array('depId','depName','count','ratio');
-//        $this->assertEquals(200, $res['status'], $res['message']);
-//    }
-//
-//    /**
-//     * 入网车辆排行——按区域统计
-//     * @depends testVerifyCode
-//     */
-//    public function testAreaRank($code){
-//        $depid = '';
-//        $area_code = '';
-//        $helper = new Helper();
-//
-//        //组装请求参数
-//        $http_query = [
-//            'depId' => $depid,
-//            'areaCode' => $area_code,
-//        ];
-//        $res = $helper->getUrl(
-//            self::Ip . '/statistics/dep-vehicles/area-rank?' . http_build_query($http_query),
-//            [
-//                'cookie: IPCS-SESSIONID='.$code[1]
-//            ]
-//        );
-//        $subset = array('areaCode','areaName','count','ratio');
-//        $this->assertEquals(200, $res['status'], $res['message']);
-//    }
-//
-//    /**
-//     * 入网车辆排行——当日报警排行榜
-//     * @depends testVerifyCode
-//     */
-//    public function testStatisticsCurrentAlerts($code){
-//        $helper = new Helper();
-//        $res = $helper->getUrl(
-//            self::Ip . '/statistics/current-alerts',
-//            [
-//                'cookie: IPCS-SESSIONID='.$code[1]
-//            ]
-//        );
-//        $subset = array('areaCode','areaName','count','ratio');
-//        $this->assertEquals(200, $res['status'], $res['message']);
-//    }
-//
-//    /**
-//     * 单个组织当日报警排行——按区域
-//     * @depends testVerifyCode
-//     */
-//    public function testStatisticsAreaRank($code){
-//        $depid = '';
-//        $area_code = '';
-//        $helper = new Helper();
-//
-//        //组装请求参数
-//        $http_query = [
-//            'depId' => $depid,
-//            'areaCode' => $area_code,
-//        ];
-//        $res = $helper->getUrl(
-//            self::Ip . '/statistics/current-alerts?' . http_build_query($http_query),
-//            [
-//                'cookie: IPCS-SESSIONID='.$code[1]
-//            ]
-//        );
-//        $subset = array('areaCode','areaName','vehicleCount','ratio');
-//        $this->assertEquals(200, $res['status'], $res['message']);
-//    }
 
     /**
      * 单个组织当日报警排行——获取报警详情
      * @depends testVerifyCode
      */
     public function testCurrentAlertsDetail($code){
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
         $depid = '-1';
         $alert_type_id = '-1';
         $area_code = '110000';
-        $helper = new Helper();
 
         //组装请求参数
         $http_query = [
             'depId' => $depid,
             'areaCode' => $area_code,
-            'alertTypeId' => $alert_type_id,
+            'alertTypeId' => $alert_type_id
         ];
-        $res = $helper->getUrl(
+        $res = $this->client->request(
+            'GET',
             self::Ip . '/current-alerts/detail?' . http_build_query($http_query),
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
         $subset = array('areaCode','areaName','counts');
-        $msg = '';
-        if ($res['status'] == 200) {
-            foreach ($subset as $v) {
-                if (array_key_exists($v, $res['data']) == false) {
-                    $msg .= $v . ' not exsit!'. PHP_EOL;
-                }
-            }
-        }
-        $excelData = [
-            '单个组织当日报警排行——获取报警详情',
-            self::Ip . '/current-alerts/detail?' . http_build_query($http_query),
-            json_encode($http_query),
-            json_encode($subset),
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
-        ];
-        $redis = $this->cache(7);
-        $redis->rpush($this->cache_key, json_encode($excelData));
-
-        $this->assertEquals(200, $res['status'], $res['message']);
+        $title = '单个组织当日报警排行——获取报警详情';
+        $url = self::Ip . '/current-alerts/detail?' . http_build_query($http_query);
+        $params = ['depId' => $depid,'areaCode' => $area_code,'alertTypeId' => $alert_type_id];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200,$res->getStatusCode(), '');
     }
-
-//    /**
-//     * 单个组织当日报警排行——获取单个报警详情
-//     * @depends testVerifyCode
-//     */
-//    public function testAlertId($code){
-//        $helper = new Helper();
-//        $res = $helper->getUrl(
-//            self::Ip . '/alerts/:id',
-//            [
-//                'cookie: IPCS-SESSIONID='.$code[1]
-//            ]
-//        );
-//        $this->assertEquals(200, $res['status'], $res['message']);
-//    }
 
     /**
      * 用户退出
      * @depends testVerifyCode
      */
     public function testLogout($code){
-        $helper = new Helper();
-        $res = $helper->delUrl(
+        $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
+            'IPCS-SESSIONID' => $code[1]
+        ], 'ipcs.iov-smart.net');
+        $res = $this->client->request(
+            'DELETE',
             self::Ip . '/logout',
             [
-                'Content-Type:application/json',
-                'cookie: IPCS-SESSIONID='.$code[1]
-            ]
-        );
+                'headers'=>['Content-Type:application/json'],
+                'cookies'=>$cookieJar
+            ]);
+        $subset = [];
+        $title = '用户退出';
+        $url = self::Ip . '/logout';
+        $params = [];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->exportData();
+        $this->assertEquals(200,$res->getStatusCode(), '');
+    }
+
+    public function collect($subset,$res,$title,$url,$params){
         $msg = '';
+        $data = json_decode($res->getBody()->getContents(),true);
+        if (!empty($subset)){
+            foreach ($subset as $v) {
+                if (!empty($data['data'][0])){
+                    if (array_key_exists($v, $data['data'][0]) == false) {
+                        $msg .= $v . ' not exsit!'. PHP_EOL;
+                    }
+                }else{
+                    if (array_key_exists($v, $data['data']) == false) {
+                        $msg .= $v . ' not exsit!'. PHP_EOL;
+                    }
+                }
+            }
+        }
         $excelData = [
-            '用户退出',
-            self::Ip . '/logout',
-            'null',
-            'null',
-            json_encode($res['data'], JSON_UNESCAPED_UNICODE),
-            $res['message'] . PHP_EOL . $msg
+            $title,
+            $url,
+            json_encode($params),
+            json_encode($subset),
+            json_encode($data['data'], JSON_UNESCAPED_UNICODE),
+            $data['message'] . PHP_EOL . $msg
         ];
         $redis = $this->cache(7);
         $redis->rpush($this->cache_key, json_encode($excelData));
-        $this->exportData();
-        $this->assertEquals(200, $res['status'], $res['message']);
     }
 
     public function cache($db){
@@ -1543,6 +1062,4 @@ class test extends TestCase
         }
         fclose($fp);
     }
-
 }
-
