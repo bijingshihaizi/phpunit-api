@@ -107,7 +107,7 @@ class test extends TestCase
                 'cookies'=>$cookieJar
             ]
         );
-        $subset = '';
+        $subset = [];
         $title = '修改密码';
         $url = self::Ip . '/password';
         $params = ['oldPsd' => '123321', 'newPsd' => '123321'];
@@ -134,7 +134,7 @@ class test extends TestCase
         $title = '修改密码';
         $url = self::Ip . '/password';
         $params = [];
-                $this->collect($subset,$res,$title,$url,$params);
+        $this->collect($subset,$res,$title,$url,$params);
         $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
