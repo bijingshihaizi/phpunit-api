@@ -135,7 +135,7 @@ class test extends TestCase
         $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
             'IPCS-SESSIONID' => $code[1]
         ], 'ipcs.iov-smart.net');
-        $ids = array('275728'); //必填参数
+        $ids = ['275728']; //必填参数
         $res = $this->client->request(
             'POST',
             self::Ip . '/query-vehicles',
@@ -150,7 +150,7 @@ class test extends TestCase
         $title = '根据车辆ID数组查询车辆';
         $url = self::Ip . '/query-vehicles';
         $params = ['ids' => $ids];
-                $this->collect($subset,$res,$title,$url,$params);
+        $this->collect($subset,$res,$title,$url,$params);
         $this->assertEquals(200,$res->getStatusCode(), '');
     }
 
@@ -220,7 +220,7 @@ class test extends TestCase
      * 车辆控制  获取车辆油电状态
      * @depends testVerifyCode
      */
-    public function testFuelStatsu($code){
+    public function testFuelStatus($code){
         $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
             'IPCS-SESSIONID' => $code[1]
         ], 'ipcs.iov-smart.net');
@@ -376,7 +376,7 @@ class test extends TestCase
         ];
         $res = $this->client->request(
             'GET',
-            self::Ip . '/current-alerts'.http_build_query($http_query),
+            self::Ip . '/current-alerts?'.http_build_query($http_query),
             [
                 'headers'=>['Content-Type:application/json'],
                 'cookies'=>$cookieJar
@@ -422,7 +422,7 @@ class test extends TestCase
         ], 'ipcs.iov-smart.net');
         $dep_ids = '6,4,7,5';
         $type_id = '1';
-        $district = '30';
+        $district = 30;
         $area_code = '110000';
 
         //组装请求参数
@@ -435,7 +435,6 @@ class test extends TestCase
         $res = $this->client->request(
             'GET',
             self::Ip . '/alerts/trend?' . http_build_query($http_query),
-
             [
                 'headers'=>['Content-Type:application/json'],
                 'cookies'=>$cookieJar
@@ -458,7 +457,7 @@ class test extends TestCase
         ], 'ipcs.iov-smart.net');
         $start_time = '1582992000000';
         $end_time = '1585670399999';
-        $top = '4';
+        $top = 4;
         $area_code = '110000';
 
         //组装请求参数
@@ -545,14 +544,14 @@ class test extends TestCase
         ];
         $res = $this->client->request(
             'GET',
-            self::Ip . '/alerts?' . http_build_query($http_query),
+            self::Ip . '/trips?' . http_build_query($http_query),
             [
                 'headers'=>['Content-Type:application/json'],
                 'cookies'=>$cookieJar
             ]);
         $subset = array('vId','plateNo','depId','depName','daySegments');
         $title = '总报警排行';
-        $url = self::Ip . '/alerts?' . http_build_query($http_query);
+        $url = self::Ip . '/trips?' . http_build_query($http_query);
         $params = [];
         $this->collect($subset,$res,$title,$url,$params);
         $this->assertEquals(200,$res->getStatusCode(), '');
@@ -657,14 +656,14 @@ class test extends TestCase
             'POST',
             self::Ip . '/vehicles/275728/stop-live',
             [
-                'json' => ['channel'=>0],
+                'json' => ['index'=>1],
                 'headers'=>['Content-Type:application/json'],
                 'cookies'=>$cookieJar
             ]);
         $subset = [];
         $title = '停止实时播放';
         $url = self::Ip . '/vehicles/275728/stop-live';
-        $params = ['channel'=>0];
+        $params = ['index'=>1];
         $this->collect($subset,$res,$title,$url,$params);
         $this->assertEquals(200,$res->getStatusCode(), '');
     }
