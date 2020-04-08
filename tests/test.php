@@ -135,13 +135,12 @@ class test extends TestCase
         $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
             'IPCS-SESSIONID' => $code[1]
         ], 'ipcs.iov-smart.net');
-        $ids = ['275728']; //必填参数
         $res = $this->client->request(
             'POST',
             self::Ip . '/query-vehicles',
             [
                 'json' => [
-                    'ids' => $ids
+                    'ids' => ['275728','126094']
                 ],
                 'headers'=>['Content-Type:application/json'],
                 'cookies'=>$cookieJar
@@ -149,7 +148,7 @@ class test extends TestCase
         $subset = array('id','vehicleType','plateNo','plateColor','simNo','vin','online','status','channels','position','depId','depName','driverName','updateTime','fuelStatus');
         $title = '根据车辆ID数组查询车辆';
         $url = self::Ip . '/query-vehicles';
-        $params = ['ids' => $ids];
+        $params = ['ids' => ['275728','126094']];
         $this->collect($subset,$res,$title,$url,$params);
         $this->assertEquals(200,$res->getStatusCode(), '');
     }
@@ -158,7 +157,7 @@ class test extends TestCase
      * 模糊查询车辆
      * @depends testVerifyCode
      */
-    public function testVeicles($code){
+    public function testVehicles($code){
         $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
             'IPCS-SESSIONID' => $code[1]
         ], 'ipcs.iov-smart.net');
@@ -248,7 +247,7 @@ class test extends TestCase
             'IPCS-SESSIONID' => $code[1]
         ], 'ipcs.iov-smart.net');
         $start_time = '0';
-        $end_time = '1585725963776';
+        $end_time = '1586329748711';
 
         //拼接请求参数
         $http_query = [
@@ -257,14 +256,14 @@ class test extends TestCase
         ];
         $res = $this->client->request(
             'GET',
-            self::Ip . 'fuel-control-log?' . http_build_query($http_query),
+            self::Ip . '/vehicles/275728/fuel-control-log?' . http_build_query($http_query),
             [
                 'headers'=>['Content-Type:application/json'],
                 'cookies'=>$cookieJar
             ]);
         $subset = array('plateNo','controlStatus','createTime','userName');
         $title = '获取用户油电操作日志';
-        $url = self::Ip . 'fuel-control-log?' . http_build_query($http_query);
+        $url = self::Ip . '/vehicles/275728/fuel-control-log?' . http_build_query($http_query);
         $params = [];
         $this->collect($subset,$res,$title,$url,$params);
         $this->assertEquals(200,$res->getStatusCode(), '');
@@ -469,7 +468,7 @@ class test extends TestCase
         ];
         $res = $this->client->request(
             'GET',
-            self::Ip . '/alerts/rank?' . http_build_query($http_query),
+            self::Ip . '/alerts-rank?' . http_build_query($http_query),
 
             [
                 'headers'=>['Content-Type:application/json'],
@@ -477,7 +476,7 @@ class test extends TestCase
             ]);
         $subset = array('depId','depName','ratio');
         $title = '总报警排行';
-        $url = self::Ip . '/alerts/trend?' . http_build_query($http_query);
+        $url = self::Ip . '/alerts-rank?' . http_build_query($http_query);
         $params = [];
         $this->collect($subset,$res,$title,$url,$params);
         $this->assertEquals(200,$res->getStatusCode(), '');
@@ -722,7 +721,7 @@ class test extends TestCase
         $file_id = '65345';
         $res = $this->client->request(
             'POST',
-            self::Ip . 'vehicles/275728/upload-video',
+            self::Ip . '/vehicles/275728/upload-video',
             [
                 'json'=>['fileId'=>$file_id],
                 'headers'=>['Content-Type:application/json'],
@@ -730,7 +729,7 @@ class test extends TestCase
             ]);
         $subset = array('taskId','status');
         $title = '通知终端向服务器上传视频';
-        $url = self::Ip . 'vehicles/275728/upload-video';
+        $url = self::Ip . '/vehicles/275728/upload-video';
         $params = ['fileId'=>$file_id];
         $this->collect($subset,$res,$title,$url,$params);
         $this->assertEquals(200,$res->getStatusCode(), '');
