@@ -30,6 +30,12 @@ class test extends TestCase
         $a = $redis->hGetAll( "spring:session:sessions:".$m[1]); //设置测试key
         $this->assertEquals(200, $res->getStatusCode(), '');
         preg_match('/([a-zA-Z0-9]{4})/', $a['sessionAttr:random_validate_code'], $n);
+        $subset = [];
+        $title = '获取验证码';
+        $url = self::Ip . '/verify-code';
+        $params = [];
+        $this->collect($subset,$res,$title,$url,$params);
+        $this->assertEquals(200, $res->getStatusCode(), '');
         return array_merge($m,$n);
     }
 
@@ -52,6 +58,11 @@ class test extends TestCase
                 'headers'=>['Content-Type:application/json'],
                 'cookies'=>$cookieJar
             ]);
+        $subset = [];
+        $title = '用户登录';
+        $url = self::Ip . '/login';
+        $params = ['username' => 'admin','password' => '123321','randomCode' => $code[2]];
+        $this->collect($subset,$res,$title,$url,$params);
         $this->assertEquals(200, $res->getStatusCode(), '');
     }
 
