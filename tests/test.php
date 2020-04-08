@@ -718,7 +718,7 @@ class test extends TestCase
         $cookieJar = \GuzzleHttp\Cookie\CookieJar::fromArray([
             'IPCS-SESSIONID' => $code[1]
         ], 'ipcs.iov-smart.net');
-        $file_id = '65345';
+        $file_id = '71594';
         $res = $this->client->request(
             'POST',
             self::Ip . '/vehicles/275728/upload-video',
@@ -813,14 +813,14 @@ class test extends TestCase
         ];
         $res = $this->client->request(
             'GET',
-            self::Ip . '/vehicles/'.$file_id.'/play-video?' . http_build_query($http_query),
+            self::Ip . '/vehicles/275728/play-video?' . http_build_query($http_query),
             [
                 'headers'=>['Content-Type:application/json'],
                 'cookies'=>$cookieJar
             ]);
         $subset = array('source','name','index');
         $title = '通知终端回放视频';
-        $url = self::Ip . '/vehicles/'.$file_id.'/play-video?' . http_build_query($http_query);
+        $url = self::Ip . '/vehicles/275728/play-video?' . http_build_query($http_query);
         $params = [];
         $this->collect($subset,$res,$title,$url,$params);
         $this->assertEquals(200,$res->getStatusCode(), '');
