@@ -305,7 +305,7 @@ class test extends TestCase
                 'headers'=>['Content-Type:application/json'],
                 'cookies'=>$cookieJar
             ]);
-        $subset = array('id','name','level','type','rule','createTime','expire_time');
+        $subset = array('id','name','level','type','rule','createTime','expireTime');
         $title = '获取报警类型';
         $url = $url.'?'.http_build_query($http_query);
         $params = [];
@@ -414,7 +414,7 @@ class test extends TestCase
                 'headers'=>['Content-Type:application/json'],
                 'cookies'=>$cookieJar
             ]);
-        $subset = array('vId','alerts','plateNo','driverName','depId','alertTime','depName','vehicleType','plateColor');
+        $subset = array('vid','alerts','plateNo','driverName','depId','depName','vehicleType','plateColor');
         $title = '获取指定车辆当前的告警信息';
         $url = self::Ip . '/vehicles/275728/current-alerts';
         $params = [];
@@ -589,7 +589,7 @@ class test extends TestCase
                 'cookies'=>$cookieJar
             ]);
         //有可能有0下标 $subset_data
-        $subset = array('id','vehicleType','plateNo','plateColor','simNo','vin','online','status','videoChannelNum','videoChannelName','depId','depName','driverName','updateTime','fuelStatus');
+        $subset = array('id','vehicleType','plateNo','plateColor','simNo','vin','online','status','videoChannelNum','videoChannelNames','depId','depName','driverName','updateTime','fuelStatus');
         $title = '根据区域和事件查询车辆';
         $url = self::Ip . '/search-vehicles';
         $params = ['startTime'=>$start_time,'endTime'=>$end_time,'shapes'=>$shapes,'depId'=>$depid];
@@ -908,7 +908,7 @@ class test extends TestCase
                 'headers'=>['Content-Type:application/json'],
                 'cookies'=>$cookieJar
             ]);
-        $subset = array('areaCode','areaName','counts');
+        $subset = array('id','vId','plateNo','depId','depName','alertType','alertPosition','endPosition','alertValue','alertUnit','gps');
         $title = '单个组织当日报警排行——获取报警详情';
         $url = self::Ip . '/current-alerts/detail?' . http_build_query($http_query);
         $params = ['depId' => $depid,'areaCode' => $area_code,'alertTypeId' => $alert_type_id];
