@@ -151,7 +151,7 @@ class test extends TestCase
             self::Ip . '/query-vehicles',
             [
                 'json' => [
-                    'ids' => ['275728','126094']
+                    'ids' => [275728,126094]
                 ],
                 'headers'=>['Content-Type:application/json'],
                 'cookies'=>$cookieJar
@@ -159,7 +159,7 @@ class test extends TestCase
         $subset = array('id','vehicleType','plateNo','plateColor','simNo','vin','online','status','channels','position','depId','depName','driverName','updateTime','fuelStatus');
         $title = '根据车辆ID数组查询车辆';
         $url = self::Ip . '/query-vehicles';
-        $params = ['ids' => ['275728','126094']];
+        $params = ['ids' => [275728,126094]];
         $this->collect($subset,$res,$title,$url,$params);
         $this->assertEquals(200,$res->getStatusCode(), '');
     }
