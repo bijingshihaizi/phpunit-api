@@ -131,8 +131,8 @@ class test extends TestCase
             'cookies' => $cookieJar
         ]);
         $subset = array ('id','name','pid');
-        $title = '修改密码';
-        $url = self::Ip . '/password';
+        $title = '车辆组列表';
+        $url = self::Ip . '/departments';
         $params = [];
         $this->collect($subset,$res,$title,$url,$params);
         $this->assertEquals(200,$res->getStatusCode(), '');
@@ -393,7 +393,7 @@ class test extends TestCase
             ]);
         $subset = array('vId','depId','vehicleType','driverName','lng','lat');
         $title = '获取正在发生的报警信息';
-        $url = self::Ip . '/current-alerts'.http_build_query($http_query);
+        $url = self::Ip . '/current-alerts?'.http_build_query($http_query);
         $params = [];
         $this->collect($subset,$res,$title,$url,$params);
         $this->assertEquals(200,$res->getStatusCode(), '');
@@ -528,7 +528,7 @@ class test extends TestCase
                 'cookies'=>$cookieJar
             ]);
         $subset = [];
-        $title = '总报警排行';
+        $title = '获取车辆报警历史';
         $params = [];
         $this->collect($subset,$res,$title,$url,$params);
         $this->assertEquals(200,$res->getStatusCode(), '');
@@ -560,7 +560,7 @@ class test extends TestCase
                 'cookies'=>$cookieJar
             ]);
         $subset = array('vId','plateNo','depId','depName','daySegments');
-        $title = '总报警排行';
+        $title = '获取车辆轨迹信息';
         $url = self::Ip . '/trips?' . http_build_query($http_query);
         $params = [];
         $this->collect($subset,$res,$title,$url,$params);
