@@ -975,99 +975,99 @@ class test extends TestCase
         return $redis;
     }
 
-//    private function exportData()
-//    {
-//        //取出来缓存数据，并立即进行删除操作
-//        $redis = $this->cache(7);
-//        $testReport = $redis->lrange($this->cache_key, 0, -1);
-//        $redis->del($this->cache_key);
-//        if (empty($testReport)) {
-//            return false;
-//        }
-//        $spreadSheet = new Spreadsheet();
-//        //单元格宽度
-//        $spreadSheet->getActiveSheet()->getDefaultColumnDimension()->setWidth(30);
-//        //行高
-//        $spreadSheet->getActiveSheet()->getDefaultRowDimension()->setRowHeight(80);
-//        $workSheet = $spreadSheet->getActiveSheet();
-//        $workSheet->setTitle('API接口测试报告');
-//
-//        //title
-//        $title = [
-//            '序号', '接口名称', 'URL', '请求参数', '过滤参数', '返回参数', '测试结果'
-//        ];
-//        //列码
-//        $titleLetter = range('A', 'G');
-//
-//        //先设置title
-//        foreach ($titleLetter as $key => $value) {
-//            $workSheet->setCellValue($value . '1', $title[$key]);
-//        }
-//
-//        //循环将内容赋值对应的单元格
-//        $i = 2;
-//        foreach ($testReport as $key => $value) {
-//            $value = json_decode($value, true);
-//            $workSheet->setCellValue('A' . $i, $i - 1);
-//            foreach ($value as $k => $v) {
-//                $workSheet->setCellValue($titleLetter[$k + 1] . $i, $v);
-//                //样式设置 - 单元格背景颜色
-//                if ($k == count($value) - 1) {
-//                    if (rtrim($v) == 'success') {
-//                        $workSheet->getStyle($titleLetter[$k + 1] . $i)->getFill()
-//                            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-//                            ->getStartColor()->setRGB('00FF00');
-//                    } else {
-//                        $workSheet->getStyle($titleLetter[$k + 1] . $i)->getFill()
-//                            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
-//                            ->getStartColor()->setRGB('FF0000');
-//                    }
-//                }
-//            }
-//            $i++;
-//        }
-//
-//        //设置单元格水平、垂直居中
-//        $styleArray = [
-//            'alignment' => [
-//                'horizontal' => Alignment::HORIZONTAL_CENTER,
-//                'vertical' => Alignment::VERTICAL_CENTER
-//            ],
-//        ];
-//        $end = $i - 1;
-//        $workSheet->getStyle('A1:G' . $end)->getAlignment()->setWrapText(true);
-//        $workSheet->getStyle('A1:G' . $end)->applyFromArray($styleArray);
-//
-//        //样式设置 - 边框
-//        $styleArray = [
-//            'borders' => [
-//                'outline' => [
-//                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THICK,
-//                    'color' => ['argb' => 'FF0000'],
-//                ],
-//                'inside' => [
-//                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
-//                ]
-//            ],
-//        ];
-//        $workSheet->getStyle('A1:G' . $end)->applyFromArray($styleArray);
-//
-//        $writer = new Xls($spreadSheet);
-//        //在test目录下创建record/PhpunitReport/对应日期目录
-//        $dir = './PhpunitReport/' . date("Y-m-d");
-//        if (!is_dir($dir)) {
-//            mkdir($dir, 0775, true);
-//        }
-//        $writer->save($dir . '/ipcsTest.xls');
-//        // csv
-//        @unlink($dir . '/ipcsTest.csv');
-//        $fp = fopen($dir . '/ipcsTest.csv', 'w');
-//        unset($title[0]);
-//        fputcsv($fp, $title);
-//        foreach ($testReport as $value) {
-//            $value = json_decode($value, true);
-//            fputcsv($fp, $value);
-//        }
-//        fclose($fp);
-//    }
+    private function exportData()
+    {
+        //取出来缓存数据，并立即进行删除操作
+        $redis = $this->cache(7);
+        $testReport = $redis->lrange($this->cache_key, 0, -1);
+        $redis->del($this->cache_key);
+        if (empty($testReport)) {
+            return false;
+        }
+        $spreadSheet = new Spreadsheet();
+        //单元格宽度
+        $spreadSheet->getActiveSheet()->getDefaultColumnDimension()->setWidth(30);
+        //行高
+        $spreadSheet->getActiveSheet()->getDefaultRowDimension()->setRowHeight(80);
+        $workSheet = $spreadSheet->getActiveSheet();
+        $workSheet->setTitle('API接口测试报告');
+
+        //title
+        $title = [
+            '序号', '接口名称', 'URL', '请求参数', '过滤参数', '返回参数', '测试结果'
+        ];
+        //列码
+        $titleLetter = range('A', 'G');
+
+        //先设置title
+        foreach ($titleLetter as $key => $value) {
+            $workSheet->setCellValue($value . '1', $title[$key]);
+        }
+
+        //循环将内容赋值对应的单元格
+        $i = 2;
+        foreach ($testReport as $key => $value) {
+            $value = json_decode($value, true);
+            $workSheet->setCellValue('A' . $i, $i - 1);
+            foreach ($value as $k => $v) {
+                $workSheet->setCellValue($titleLetter[$k + 1] . $i, $v);
+                //样式设置 - 单元格背景颜色
+                if ($k == count($value) - 1) {
+                    if (rtrim($v) == 'success') {
+                        $workSheet->getStyle($titleLetter[$k + 1] . $i)->getFill()
+                            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                            ->getStartColor()->setRGB('00FF00');
+                    } else {
+                        $workSheet->getStyle($titleLetter[$k + 1] . $i)->getFill()
+                            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                            ->getStartColor()->setRGB('FF0000');
+                    }
+                }
+            }
+            $i++;
+        }
+
+        //设置单元格水平、垂直居中
+        $styleArray = [
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER
+            ],
+        ];
+        $end = $i - 1;
+        $workSheet->getStyle('A1:G' . $end)->getAlignment()->setWrapText(true);
+        $workSheet->getStyle('A1:G' . $end)->applyFromArray($styleArray);
+
+        //样式设置 - 边框
+        $styleArray = [
+            'borders' => [
+                'outline' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THICK,
+                    'color' => ['argb' => 'FF0000'],
+                ],
+                'inside' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                ]
+            ],
+        ];
+        $workSheet->getStyle('A1:G' . $end)->applyFromArray($styleArray);
+
+        $writer = new Xls($spreadSheet);
+        //在test目录下创建record/PhpunitReport/对应日期目录
+        $dir = './PhpunitReport/' . date("Y-m-d");
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+        $writer->save($dir . '/ipcsTest.xls');
+        // csv
+        @unlink($dir . '/ipcsTest.csv');
+        $fp = fopen($dir . '/ipcsTest.csv', 'w');
+        unset($title[0]);
+        fputcsv($fp, $title);
+        foreach ($testReport as $value) {
+            $value = json_decode($value, true);
+            fputcsv($fp, $value);
+        }
+        fclose($fp);
+    }
 }
