@@ -1013,7 +1013,7 @@ class test extends TestCase
                 $workSheet->setCellValue($titleLetter[$k + 1] . $i, $v);
                 //样式设置 - 单元格背景颜色
                 if ($k == count($value) - 1) {
-                    if (rtrim($v) == 'success') {
+                    if (rtrim($v) == 'success' || strpos(rtrim($v),'成功') !== false || rtrim($v) == '' || strpos(rtrim($v),'success') !== false) {
                         $workSheet->getStyle($titleLetter[$k + 1] . $i)->getFill()
                             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
                             ->getStartColor()->setRGB('00FF00');
