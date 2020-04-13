@@ -713,7 +713,7 @@ class test extends TestCase
             ]);
 
         //$res['data'][0] data下有可能为空 表示无视频
-        $subset = array('id','startTime','endTime','uploadTime','fileType','channel','size','path','downloadUrl','uploadType');
+        $subset = [];
         $title = '获取服务器上存储的视频文件';
         $params = [];
         $this->collect($subset,$res,$title,$url,$params);
@@ -792,7 +792,7 @@ class test extends TestCase
                 'headers'=>['Content-Type:application/json'],
                 'cookies'=>$cookieJar
             ]);
-        $subset = array('status');
+        $subset = [];
         $title = '视频回放  （暂停/继续/取消）文件上传';
         $url = self::Ip . '/file-tasks/'.$id.'/status';
         $params = ['action'=>$action];
@@ -946,14 +946,17 @@ class test extends TestCase
             foreach ($subset as $v) {
                 if (!empty($data['data'][0])){
                     if (array_key_exists($v, $data['data'][0]) == false) {
-                        $msg .= $v . ' not exsit!'. PHP_EOL;
+                        $msg .= $v . ' not exist!'. PHP_EOL;
                     }
                 }else{
                     if (array_key_exists($v, $data['data']) == false) {
-                        $msg .= $v . ' not exsit!'. PHP_EOL;
+                        $msg .= $v . ' not exist!'. PHP_EOL;
                     }
                 }
             }
+        }
+        if ($res->getStatusCode()){
+            $data['message'] = 'success';
         }
         $excelData = [
             $title,
@@ -1013,7 +1016,7 @@ class test extends TestCase
                 $workSheet->setCellValue($titleLetter[$k + 1] . $i, $v);
                 //样式设置 - 单元格背景颜色
                 if ($k == count($value) - 1) {
-                    if (rtrim($v) == 'success' || strpos(rtrim($v),'成功') !== false || rtrim($v) == '' || strpos(rtrim($v),'success') !== false) {
+                    if (strpos(rtrim($v),'成功') !== false || rtrim($v) == '' || strpos(rtrim($v),'success') !== false) {
                         $workSheet->getStyle($titleLetter[$k + 1] . $i)->getFill()
                             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
                             ->getStartColor()->setRGB('00FF00');
