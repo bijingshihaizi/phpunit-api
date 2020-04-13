@@ -955,7 +955,7 @@ class test extends TestCase
                 }
             }
         }
-        if ($res->getStatusCode()){
+        if ($res->getStatusCode() == 200){
             $data['message'] = 'success';
         }
         $excelData = [
